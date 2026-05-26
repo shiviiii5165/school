@@ -1,3 +1,5 @@
+"use client";
+
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Users, UserCheck, IndianRupee, BellDot } from "lucide-react";
 import Link from "next/link";

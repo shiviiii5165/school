@@ -1,3 +1,5 @@
+"use client";
+
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Users, FileText, Calendar, Clock, BookOpen, ChevronRight } from "lucide-react";
 import Link from "next/link";
