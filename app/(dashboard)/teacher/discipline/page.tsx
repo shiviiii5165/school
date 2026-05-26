@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { Search, AlertTriangle, ShieldAlert, Smartphone, Clock, MessageSquareX, Frown, CheckCircle2, ChevronRight, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Search, AlertTriangle, ShieldAlert, Smartphone, Clock, MessageSquareX, Frown, CheckCircle2, ChevronRight, X, Loader2 } from "lucide-react";
 
 interface Student {
   id: string;
@@ -11,58 +12,92 @@ interface Student {
   avatar: string;
 }
 
-const dummyStudents: Student[] = [
-  { id: "1", name: "Rahul Kumar", rollNo: "01", className: "Class 10 - A", avatar: "" },
-  { id: "2", name: "Priya Sharma", rollNo: "02", className: "Class 10 - A", avatar: "" },
-  { id: "3", name: "Aman Singh", rollNo: "03", className: "Class 10 - B", avatar: "" },
-  { id: "4", name: "Neha Gupta", rollNo: "04", className: "Class 9 - C", avatar: "" },
-];
-
 const categories = [
-  { id: "attendance", title: "Attendance", icon: Clock, desc: "Late arrival, unauthorized absence" },
-  { id: "behavior", title: "Behavior", icon: Frown, desc: "Disruptive in class, disrespect" },
-  { id: "device", title: "Device Use", icon: Smartphone, desc: "Unauthorized phone/tablet use" },
-  { id: "academic", title: "Academic", icon: MessageSquareX, desc: "Cheating, plagiarism, not doing work" },
-  { id: "safety", title: "Safety", icon: ShieldAlert, desc: "Fighting, bullying, dangerous actions" },
+  { id: "Attendance", title: "Attendance", icon: Clock, desc: "Late arrival, unauthorized absence" },
+  { id: "Behavior", title: "Behavior", icon: Frown, desc: "Disruptive in class, disrespect" },
+  { id: "Device Use", title: "Device Use", icon: Smartphone, desc: "Unauthorized phone/tablet use" },
+  { id: "Academic", title: "Academic", icon: MessageSquareX, desc: "Cheating, plagiarism, not doing work" },
+  { id: "Safety", title: "Safety", icon: ShieldAlert, desc: "Fighting, bullying, dangerous actions" },
 ];
 
 export default function TeacherDisciplinePage() {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [incidentDetails, setIncidentDetails] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [toastError, setToastError] = useState<string | null>(null);
 
-  const filteredStudents = dummyStudents.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.rollNo.includes(searchTerm)
-  );
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Search students from API
+  const { data: studentsData, isLoading: isSearching } = useQuery({
+    queryKey: ["student-search", debouncedSearch],
+    queryFn: async () => {
+      if (debouncedSearch.length < 2) return { students: [] };
+      const res = await fetch(`/api/students/search?q=${encodeURIComponent(debouncedSearch)}`);
+      if (!res.ok) throw new Error("Search failed");
+      return res.json();
+    },
+    enabled: debouncedSearch.length >= 2,
+  });
+
+  const students: Student[] = studentsData?.students || [];
+
+  // Submit report mutation
+  const submitMutation = useMutation({
+    mutationFn: async (payload: { studentId: string; category: string; description: string }) => {
+      const res = await fetch("/api/discipline/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to submit report");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discipline-reports"] });
+      setShowToast(true);
+      setToastError(null);
+      setStep(1);
+      setSelectedStudent(null);
+      setSelectedCategory(null);
+      setIncidentDetails("");
+      setSearchTerm("");
+      setTimeout(() => setShowToast(false), 4000);
+    },
+    onError: (error: Error) => {
+      setToastError(error.message);
+      setTimeout(() => setToastError(null), 5000);
+    },
+  });
 
   const handleNext = () => {
     if (selectedStudent) setStep(2);
   };
 
   const handleSubmit = () => {
-    if (!selectedCategory || !incidentDetails) return;
-    
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setShowToast(true);
-      // Reset form
-      setStep(1);
-      setSelectedStudent(null);
-      setSelectedCategory(null);
-      setIncidentDetails("");
-      setTimeout(() => setShowToast(false), 3000);
-    }, 1000);
+    if (!selectedStudent || !selectedCategory || !incidentDetails) return;
+    submitMutation.mutate({
+      studentId: selectedStudent.id,
+      category: selectedCategory,
+      description: incidentDetails,
+    });
   };
 
   return (
     <div className="space-y-6 relative max-w-3xl mx-auto">
-      {/* Toast */}
+      {/* Success Toast */}
       {showToast && (
         <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
           <div className="bg-status-success-bg border border-status-success text-status-success-text px-4 py-3 rounded-lg shadow-dropdown flex items-center gap-3">
@@ -70,6 +105,19 @@ export default function TeacherDisciplinePage() {
             <div>
               <p className="font-medium text-sm">Report Submitted</p>
               <p className="text-xs opacity-90">Forwarded to Admin for review</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {toastError && (
+        <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="bg-status-danger-bg border border-status-danger text-status-danger-text px-4 py-3 rounded-lg shadow-dropdown flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5" />
+            <div>
+              <p className="font-medium text-sm">Submission Failed</p>
+              <p className="text-xs opacity-90">{toastError}</p>
             </div>
           </div>
         </div>
@@ -119,7 +167,7 @@ export default function TeacherDisciplinePage() {
                 <Search className="w-8 h-8 text-primary" />
               </div>
               <h2 className="text-lg font-bold text-text-primary">Who is involved?</h2>
-              <p className="text-sm text-text-secondary mt-1">Search by student name or roll number</p>
+              <p className="text-sm text-text-secondary mt-1">Search by student name or roll number (min 2 characters)</p>
             </div>
 
             <div className="relative">
@@ -131,11 +179,19 @@ export default function TeacherDisciplinePage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 bg-background border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
               />
+              {isSearching && (
+                <Loader2 className="w-5 h-5 text-primary absolute right-4 top-1/2 -translate-y-1/2 animate-spin" />
+              )}
             </div>
 
             <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-              {filteredStudents.length > 0 ? (
-                filteredStudents.map((student) => (
+              {isSearching ? (
+                <div className="text-center py-8">
+                  <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-text-muted">Searching...</p>
+                </div>
+              ) : students.length > 0 ? (
+                students.map((student) => (
                   <button
                     key={student.id}
                     onClick={() => setSelectedStudent(student)}
@@ -161,9 +217,13 @@ export default function TeacherDisciplinePage() {
                     </div>
                   </button>
                 ))
+              ) : debouncedSearch.length >= 2 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-text-muted">No students found matching &quot;{debouncedSearch}&quot;</p>
+                </div>
               ) : (
                 <div className="text-center py-8">
-                  <p className="text-sm text-text-muted">No students found matching "{searchTerm}"</p>
+                  <p className="text-sm text-text-muted">Type at least 2 characters to search</p>
                 </div>
               )}
             </div>
@@ -247,11 +307,20 @@ export default function TeacherDisciplinePage() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!selectedCategory || !incidentDetails || isSubmitting}
+              disabled={!selectedCategory || !incidentDetails || submitMutation.isPending}
               className="flex items-center gap-2 bg-status-danger hover:bg-status-danger/90 text-white px-8 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >
-              {isSubmitting ? "Submitting..." : "Submit Report"}
-              {!isSubmitting && <AlertTriangle className="w-4 h-4" />}
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  Submit Report
+                  <AlertTriangle className="w-4 h-4" />
+                </>
+              )}
             </button>
           </div>
         </div>

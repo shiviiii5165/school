@@ -32,6 +32,7 @@ model User {
   student      Student?
   parent       Parent?
   teacher      Teacher?
+  notifications Notification[]
 }
 
 model Student {
@@ -230,4 +231,15 @@ model Leave {
   status      String      @default("PENDING")
   approvedBy  String?
   createdAt   DateTime    @default(now())
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        String
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

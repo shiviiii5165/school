@@ -38,6 +38,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot mark attendance for future dates" }, { status: 400 });
     }
 
+    // Block attendance for suspended students — enforce at backend
+    const studentIds = records.map((r: any) => r.studentId);
+    const suspendedStudents = await prisma.student.findMany({
+      where: { id: { in: studentIds }, isSuspended: true },
+      select: { id: true },
+    });
+    const suspendedIds = new Set(suspendedStudents.map(s => s.id));
+
     // Check if attendance already exists for today
     const existing = await prisma.attendance.findFirst({
       where: {
@@ -61,7 +69,7 @@ export async function POST(req: NextRequest) {
       studentId: r.studentId,
       classId,
       date: parsedDate,
-      status: r.status,
+      status: suspendedIds.has(r.studentId) ? "BLOCKED" : r.status,
       markedBy: teacherId,
       headCount: headCount
     }));
