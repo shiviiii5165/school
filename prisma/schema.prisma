@@ -82,6 +82,7 @@ model Teacher {
   salary     Float?
   
   reportedDisciplines DisciplineReport[]
+  timetablePeriods    TimetablePeriod[]
 }
 
 model Class {
@@ -93,6 +94,7 @@ model Class {
   students  Student[]
   subjects  Subject[]
   assignments Assignment[]
+  timetablePeriods TimetablePeriod[]
 }
 
 model Subject {
@@ -105,6 +107,7 @@ model Subject {
   teacher   Teacher @relation(fields: [teacherId], references: [id])
   
   assignments Assignment[]
+  timetablePeriods TimetablePeriod[]
 }
 
 model Attendance {
@@ -242,4 +245,24 @@ model Notification {
   type        String
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+model TimetablePeriod {
+  id           String   @id @default(cuid())
+  teacherId    String
+  teacher      Teacher  @relation(fields: [teacherId], references: [id])
+  classId      String
+  class        Class    @relation(fields: [classId], references: [id])
+  subjectId    String
+  subject      Subject  @relation(fields: [subjectId], references: [id])
+  dayOfWeek    Int      // 1 (Monday) to 6 (Saturday)
+  periodNumber Int      // 1 to 7
+  startTime    String   // e.g., "08:00"
+  endTime      String   // e.g., "08:45"
+  roomNumber   String
+  createdAt    DateTime @default(now())
+
+  @@unique([teacherId, dayOfWeek, periodNumber])
+  @@index([teacherId])
+  @@index([classId])
 }
