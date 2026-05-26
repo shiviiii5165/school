@@ -1,7 +1,6 @@
 "use client";
 
 import { Users, IndianRupee, GraduationCap, ShieldAlert, TrendingUp, TrendingDown } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 interface TopAnalyticsCardsProps {
   data: any;
@@ -13,10 +12,10 @@ export default function TopAnalyticsCards({ data, isLoading }: TopAnalyticsCards
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-surface border border-border rounded-xl p-6 shadow-sm">
-            <Skeleton className="w-12 h-12 rounded-lg mb-4" />
-            <Skeleton className="w-24 h-4 mb-2" />
-            <Skeleton className="w-16 h-8" />
+          <div key={i} className="bg-surface border border-border rounded-xl p-6 shadow-sm animate-pulse">
+            <div className="w-12 h-12 rounded-lg mb-4 bg-border/50" />
+            <div className="w-24 h-4 mb-2 bg-border/50 rounded" />
+            <div className="w-16 h-8 bg-border/50 rounded" />
           </div>
         ))}
       </div>
