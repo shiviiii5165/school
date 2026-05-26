@@ -52,8 +52,7 @@ export default function LoginForm() {
         setSuccessRole(role);
         
         setTimeout(() => {
-          router.push(`/${role.toLowerCase()}`);
-          router.refresh();
+          window.location.href = `/${role.toLowerCase()}`;
         }, 1500);
       }
     } catch (err) {
