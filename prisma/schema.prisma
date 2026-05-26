@@ -266,3 +266,17 @@ model TimetablePeriod {
   @@index([teacherId])
   @@index([classId])
 }
+
+model SystemSettings {
+  id                  String   @id @default(cuid())
+  schoolName          String   @default("EduCore School")
+  schoolEmail         String   @default("contact@educore.com")
+  schoolPhone         String   @default("+91 9876543210")
+  minimumAttendance   Int      @default(75)
+  detentionThreshold  Int      @default(75)
+  attendanceEnabled   Boolean  @default(true)
+  notificationEnabled Boolean  @default(true)
+  gradingSystem       String   @default("PERCENTAGE")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
