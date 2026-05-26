@@ -55,8 +55,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, report });
   } catch (error: any) {
     console.error("Error creating report:", error);
-    const errorDetails = error?.message ? String(error.message) : String(error);
-    return NextResponse.json({ error: `Debug: ${errorDetails} | Stack: ${error?.stack}` }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
   }
 }
 
