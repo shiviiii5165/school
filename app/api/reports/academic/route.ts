@@ -11,16 +11,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const results = await prisma.result.findMany({
-      include: {
-        student: {
-          include: {
-            user: true,
-            class: true
-          }
-        }
-      }
+    const results = await prisma.result.findMany();
+    
+    // Fetch related students and classes manually because Result model lacks relations
+    const studentIds = Array.from(new Set(results.map(r => r.studentId)));
+    const students = await prisma.student.findMany({
+      where: { id: { in: studentIds } },
+      include: { user: true, class: true }
     });
+    
+    const studentMap = students.reduce((acc, student) => {
+      acc[student.id] = student;
+      return acc;
+    }, {} as any);
 
     const subjectAveragesMap: Record<string, { total: number, count: number }> = {};
     const topPerformersMap: Record<string, { name: string, className: string, totalMarks: number, maxMarks: number }> = {};
@@ -34,16 +37,19 @@ export async function GET(req: NextRequest) {
       subjectAveragesMap[res.subjectId].count += 1;
 
       // Top performers
-      if (!topPerformersMap[res.studentId]) {
-        topPerformersMap[res.studentId] = { 
-          name: res.student.user.name, 
-          className: `${res.student.class.name} ${res.student.class.section}`,
-          totalMarks: 0,
-          maxMarks: 0
-        };
+      const student = studentMap[res.studentId];
+      if (student) {
+        if (!topPerformersMap[res.studentId]) {
+          topPerformersMap[res.studentId] = { 
+            name: student.user.name, 
+            className: `${student.class.name} ${student.class.section}`,
+            totalMarks: 0,
+            maxMarks: 0
+          };
+        }
+        topPerformersMap[res.studentId].totalMarks += res.marks;
+        topPerformersMap[res.studentId].maxMarks += res.maxMarks;
       }
-      topPerformersMap[res.studentId].totalMarks += res.marks;
-      topPerformersMap[res.studentId].maxMarks += res.maxMarks;
     });
 
     const topPerformers = Object.values(topPerformersMap)
@@ -56,7 +62,7 @@ export async function GET(req: NextRequest) {
       .slice(0, 10);
 
     const subjectComparisonChart = Object.keys(subjectAveragesMap).map(subId => ({
-      name: `Subject ${subId.substring(0,4)}`, // Ideally join with Subject table to get name
+      name: `Subject ${subId.substring(0,4)}`, 
       average: subjectAveragesMap[subId].total / subjectAveragesMap[subId].count
     }));
 
