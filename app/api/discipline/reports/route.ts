@@ -27,8 +27,8 @@ export async function POST(req: NextRequest) {
 
     const report = await prisma.disciplineReport.create({
       data: {
-        studentId,
-        reportedBy: teacher.id,
+        student: { connect: { id: studentId } },
+        teacher: { connect: { id: teacher.id } },
         category,
         description,
         status: "PENDING",
@@ -36,22 +36,27 @@ export async function POST(req: NextRequest) {
     });
 
     // Notify admins
-    const admins = await prisma.user.findMany({ where: { role: "ADMIN" } });
-    const notifications = admins.map((admin) => ({
-      userId: admin.id,
-      title: "New Discipline Report",
-      message: `A new discipline report has been submitted for category: ${category}.`,
-      type: "DISCIPLINE",
-    }));
+    try {
+      const admins = await prisma.user.findMany({ where: { role: "ADMIN" } });
+      const notifications = admins.map((admin) => ({
+        userId: admin.id,
+        title: "New Discipline Report",
+        message: `A new discipline report has been submitted for category: ${category}.`,
+        type: "DISCIPLINE",
+      }));
 
-    if (notifications.length > 0) {
-      await prisma.notification.createMany({ data: notifications });
+      if (notifications.length > 0) {
+        await prisma.notification.createMany({ data: notifications });
+      }
+    } catch (notifError) {
+      console.error("Error sending notifications:", notifError);
     }
 
     return NextResponse.json({ success: true, report });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating report:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    const errorDetails = error?.message ? String(error.message) : String(error);
+    return NextResponse.json({ error: `Debug: ${errorDetails} | Stack: ${error?.stack}` }, { status: 500 });
   }
 }
 
