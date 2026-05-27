@@ -3,14 +3,9 @@
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Users, UserCheck, IndianRupee, BellDot } from "lucide-react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import TodayAttendanceTable from "@/components/admin/dashboard/TodayAttendanceTable";
 
-const AttendanceChart = dynamic(() => import("@/components/dashboard/AttendanceChart"), {
-  ssr: false,
-  loading: () => <div className="h-[400px] w-full bg-surface border border-border rounded-xl animate-pulse flex items-center justify-center text-text-muted">Loading chart...</div>
-});
-
-export default function AdminDashboardClient({ totalStudents, attendancePercentage }: { totalStudents: number, attendancePercentage: number }) {
+export default function AdminDashboardClient({ totalStudents, attendancePercentage, classesMarked, totalClassesCount }: { totalStudents: number, attendancePercentage: number, classesMarked: number, totalClassesCount: number }) {
   return (
     <div className="space-y-6">
       {/* Top Section - Metric Cards */}
@@ -29,7 +24,7 @@ export default function AdminDashboardClient({ totalStudents, attendancePercenta
           icon={UserCheck}
           iconColor="text-status-success-text"
           iconBg="bg-status-success-bg"
-          trend={{ value: 0, direction: "up", label: "Live data" }}
+          trend={{ value: 0, direction: "up", label: `${classesMarked}/${totalClassesCount} classes marked today` }}
         />
         <MetricCard
           title="Fee Collection"
@@ -51,8 +46,8 @@ export default function AdminDashboardClient({ totalStudents, attendancePercenta
 
       {/* Middle Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <AttendanceChart />
+        <div className="lg:col-span-2 h-[400px]">
+          <TodayAttendanceTable />
         </div>
         <div className="lg:col-span-1">
           {/* Recent Activity Feed */}

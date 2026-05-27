@@ -22,7 +22,22 @@ export default async function AdminDashboard() {
     ? Math.round((presentCount / todayAttendance.length) * 100) 
     : 100;
 
+  const totalClassesCount = await prisma.class.count();
+  const classesMarked = await prisma.dailyAttendanceLog.count({
+    where: {
+      date: {
+        gte: today,
+        lt: tomorrow,
+      }
+    }
+  });
+
   return (
-    <AdminDashboardClient totalStudents={totalStudents} attendancePercentage={attendancePercentage} />
+    <AdminDashboardClient 
+      totalStudents={totalStudents} 
+      attendancePercentage={attendancePercentage} 
+      classesMarked={classesMarked}
+      totalClassesCount={totalClassesCount}
+    />
   );
 }

@@ -126,6 +126,49 @@ export async function POST(req: NextRequest) {
         });
       }
     }
+    // Create or update DailyAttendanceLog
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let blocked = 0;
+
+    for (const r of attendanceData) {
+      if (r.status === "PRESENT") present++;
+      if (r.status === "ABSENT") absent++;
+      if (r.status === "LATE") late++;
+      if (r.status === "BLOCKED") blocked++;
+    }
+
+    await prisma.dailyAttendanceLog.upsert({
+      where: {
+        classId_date: {
+          classId,
+          date: parsedDate,
+        }
+      },
+      update: {
+        teacherId: teacherRecord.id,
+        submittedAt: new Date(),
+        totalStudents: records.length,
+        presentCount: present,
+        absentCount: absent,
+        lateCount: late,
+        blockedCount: blocked,
+        headCount: headCount || records.length,
+      },
+      create: {
+        classId,
+        date: parsedDate,
+        teacherId: teacherRecord.id,
+        submittedAt: new Date(),
+        totalStudents: records.length,
+        presentCount: present,
+        absentCount: absent,
+        lateCount: late,
+        blockedCount: blocked,
+        headCount: headCount || records.length,
+      }
+    });
 
     return NextResponse.json({ success: true, message: "Attendance saved successfully" });
 
