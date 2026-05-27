@@ -18,47 +18,47 @@ model School {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  regId        String   @unique  // e.g. STU-2024-0042, TCH-001
-  name         String
-  email        String   @unique
-  phone        String
-  password     String   // hashed
-  role         String   // ADMIN, TEACHER, STUDENT, PARENT
-  avatar       String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  
-  student      Student?
-  parent       Parent?
-  teacher      Teacher?
+  id        String   @id @default(cuid())
+  regId     String   @unique // e.g. STU-2024-0042, TCH-001
+  name      String
+  email     String   @unique
+  phone     String
+  password  String // hashed
+  role      String // ADMIN, TEACHER, STUDENT, PARENT
+  avatar    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  student       Student?
+  parent        Parent?
+  teacher       Teacher?
   notifications Notification[]
 }
 
 model Student {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rollNo          String
-  classId         String
-  class           Class    @relation(fields: [classId], references: [id])
-  fatherName      String
-  motherName      String
-  fatherPhone     String
-  motherPhone     String
-  address         String
-  dateOfBirth     DateTime
-  admissionDate   DateTime
-  parentId        String?
-  parent          Parent?  @relation(fields: [parentId], references: [id])
-  isSuspended     Boolean  @default(false)
-  suspendedReason String?
-  suspendedAt     DateTime?
-  attendancePercentage  Float    @default(100)
-  examEligible          Boolean  @default(true)
-  detainedAt            DateTime?
-  detainedReason        String?
-  detainedBy            String?  // adminId
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rollNo               String
+  classId              String
+  class                Class     @relation(fields: [classId], references: [id])
+  fatherName           String
+  motherName           String
+  fatherPhone          String
+  motherPhone          String
+  address              String
+  dateOfBirth          DateTime
+  admissionDate        DateTime
+  parentId             String?
+  parent               Parent?   @relation(fields: [parentId], references: [id])
+  isSuspended          Boolean   @default(false)
+  suspendedReason      String?
+  suspendedAt          DateTime?
+  attendancePercentage Float     @default(100)
+  examEligible         Boolean   @default(true)
+  detainedAt           DateTime?
+  detainedReason       String?
+  detainedBy           String? // adminId
 
   disciplineReports DisciplineReport[]
   attendanceRecords Attendance[]
@@ -73,28 +73,30 @@ model Parent {
 }
 
 model Teacher {
-  id         String   @id @default(cuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subjects   Subject[]
-  classes    Class[]
-  joinDate   DateTime
-  salary     Float?
-  
+  id       String    @id @default(cuid())
+  userId   String    @unique
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects Subject[]
+  classes  Class[]
+  joinDate DateTime
+  salary   Float?
+
   reportedDisciplines DisciplineReport[]
   timetablePeriods    TimetablePeriod[]
+  DailyAttendanceLog  DailyAttendanceLog[]
 }
 
 model Class {
-  id        String    @id @default(cuid())
-  name      String    // e.g. "Class 10"
-  section   String    // e.g. "A"
-  teacherId String
-  teacher   Teacher   @relation(fields: [teacherId], references: [id])
-  students  Student[]
-  subjects  Subject[]
-  assignments Assignment[]
-  timetablePeriods TimetablePeriod[]
+  id                 String               @id @default(cuid())
+  name               String // e.g. "Class 10"
+  section            String // e.g. "A"
+  teacherId          String
+  teacher            Teacher              @relation(fields: [teacherId], references: [id])
+  students           Student[]
+  subjects           Subject[]
+  assignments        Assignment[]
+  timetablePeriods   TimetablePeriod[]
+  DailyAttendanceLog DailyAttendanceLog[]
 }
 
 model Subject {
@@ -105,8 +107,8 @@ model Subject {
   class     Class   @relation(fields: [classId], references: [id])
   teacherId String
   teacher   Teacher @relation(fields: [teacherId], references: [id])
-  
-  assignments Assignment[]
+
+  assignments      Assignment[]
   timetablePeriods TimetablePeriod[]
 }
 
@@ -117,9 +119,9 @@ model Attendance {
   classId     String
   date        DateTime         @db.Date
   status      AttendanceStatus
-  markedBy    String           // teacherId
+  markedBy    String // teacherId
   submittedAt DateTime         @default(now())
-  headCount   Int?             // teacher's manual head count
+  headCount   Int? // teacher's manual head count
 
   @@unique([studentId, classId, date])
   @@index([classId, date])
@@ -165,50 +167,50 @@ model DailyAttendanceLog {
 }
 
 model Assignment {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   title       String
   description String
   subjectId   String
-  subject     Subject  @relation(fields: [subjectId], references: [id])
+  subject     Subject      @relation(fields: [subjectId], references: [id])
   classId     String
-  class       Class    @relation(fields: [classId], references: [id])
+  class       Class        @relation(fields: [classId], references: [id])
   teacherId   String
   dueDate     DateTime
   maxMarks    Float
   fileUrl     String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime     @default(now())
   submissions Submission[]
 }
 
 model Submission {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   assignmentId String
   assignment   Assignment @relation(fields: [assignmentId], references: [id])
   studentId    String
   fileUrl      String?
-  submittedAt  DateTime @default(now())
+  submittedAt  DateTime   @default(now())
   marks        Float?
   feedback     String?
   gradedAt     DateTime?
 }
 
 model Result {
-  id          String   @id @default(cuid())
-  studentId   String
-  subjectId   String
-  examType    String   // "Unit Test 1", "Mid Term", "Final"
-  marks       Float
-  maxMarks    Float
-  grade       String
-  remarks     String?
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  studentId String
+  subjectId String
+  examType  String // "Unit Test 1", "Mid Term", "Final"
+  marks     Float
+  maxMarks  Float
+  grade     String
+  remarks   String?
+  createdAt DateTime @default(now())
 }
 
 model FeeRecord {
   id          String    @id @default(cuid())
   studentId   String
   amount      Float
-  feeType     String    // "Tuition", "Transport", "Library"
+  feeType     String // "Tuition", "Transport", "Library"
   dueDate     DateTime
   paidDate    DateTime?
   status      String    @default("PENDING") // PENDING, PAID, OVERDUE
@@ -217,52 +219,52 @@ model FeeRecord {
 }
 
 model DisciplineReport {
-  id              String             @id @default(cuid())
-  studentId       String
-  student         Student            @relation(fields: [studentId], references: [id])
-  reportedBy      String             // teacherId
-  teacher         Teacher            @relation(fields: [reportedBy], references: [id])
-  category        String
-  description     String
-  status          String             @default("PENDING")
-  adminNote       String?
-  reviewedBy      String?            // adminId
-  reviewedAt      DateTime?
-  actionTaken     String?
-  createdAt       DateTime           @default(now())
+  id          String    @id @default(cuid())
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id])
+  reportedBy  String // teacherId
+  teacher     Teacher   @relation(fields: [reportedBy], references: [id])
+  category    String
+  description String
+  status      String    @default("PENDING")
+  adminNote   String?
+  reviewedBy  String? // adminId
+  reviewedAt  DateTime?
+  actionTaken String?
+  createdAt   DateTime  @default(now())
 }
 
 model Notice {
-  id          String   @id @default(cuid())
-  title       String
-  content     String
-  audience    String[] // ["ALL", "TEACHERS", "STUDENTS", "PARENTS"]
-  postedBy    String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  audience  String[] // ["ALL", "TEACHERS", "STUDENTS", "PARENTS"]
+  postedBy  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 }
 
 model Leave {
-  id          String      @id @default(cuid())
-  userId      String
-  type        String      // "Sick", "Casual", "Emergency"
-  fromDate    DateTime
-  toDate      DateTime
-  reason      String
-  status      String      @default("PENDING")
-  approvedBy  String?
-  createdAt   DateTime    @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  type       String // "Sick", "Casual", "Emergency"
+  fromDate   DateTime
+  toDate     DateTime
+  reason     String
+  status     String   @default("PENDING")
+  approvedBy String?
+  createdAt  DateTime @default(now())
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  message     String
-  type        String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model TimetablePeriod {
@@ -273,10 +275,10 @@ model TimetablePeriod {
   class        Class    @relation(fields: [classId], references: [id])
   subjectId    String
   subject      Subject  @relation(fields: [subjectId], references: [id])
-  dayOfWeek    Int      // 1 (Monday) to 6 (Saturday)
-  periodNumber Int      // 1 to 7
-  startTime    String   // e.g., "08:00"
-  endTime      String   // e.g., "08:45"
+  dayOfWeek    Int // 1 (Monday) to 6 (Saturday)
+  periodNumber Int // 1 to 7
+  startTime    String // e.g., "08:00"
+  endTime      String // e.g., "08:45"
   roomNumber   String
   createdAt    DateTime @default(now())
 
@@ -286,30 +288,30 @@ model TimetablePeriod {
 }
 
 model SystemSettings {
-  id                    String   @id @default("singleton")
-  schoolName            String
-  schoolEmail           String
-  schoolPhone           String?
-  schoolAddress         String?
+  id            String  @id @default("singleton")
+  schoolName    String
+  schoolEmail   String
+  schoolPhone   String?
+  schoolAddress String?
 
-  minimumAttendance     Int      @default(75)
-  detentionThreshold    Int      @default(75)
+  minimumAttendance  Int @default(75)
+  detentionThreshold Int @default(75)
 
-  gradingSystem         String   @default("PERCENTAGE")
+  gradingSystem String @default("PERCENTAGE")
 
-  enableEmailAlerts     Boolean  @default(true)
-  enableSMSAlerts       Boolean  @default(false)
+  enableEmailAlerts Boolean @default(true)
+  enableSMSAlerts   Boolean @default(false)
 
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model FeeType {
-  id          String   @id @default(cuid())
-  name        String
-  amount      Float
-  frequency   String   // MONTHLY / ANNUAL / ONE_TIME
+  id           String  @id @default(cuid())
+  name         String
+  amount       Float
+  frequency    String // MONTHLY / ANNUAL / ONE_TIME
   applicableTo String  @default("ALL")
-  description String?
-  isActive    Boolean  @default(true)
+  description  String?
+  isActive     Boolean @default(true)
 }
