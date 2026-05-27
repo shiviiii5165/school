@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 export default async function ParentDashboard() {
   const session = await auth();
-  if (!session || session.user?.role !== "PARENT") {
+  if (!session || !session.user?.id || session.user?.role !== "PARENT") {
     redirect("/login");
   }
 
