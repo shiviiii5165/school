@@ -7,6 +7,7 @@ export const authConfig = {
   session: {
     strategy: "jwt",
   },
+  trustHost: true,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       // Let the middleware handle authorization logic
