@@ -5,13 +5,20 @@ import MetricCard from "@/components/dashboard/MetricCard";
 import { Users, IndianRupee, Bell, Award, ChevronRight, GraduationCap, Clock } from "lucide-react";
 import Link from "next/link";
 
-const children = [
-  { id: "1", name: "Rahul Kumar", class: "Class 10 - A", attendance: "92%", lastScore: "A+" },
-  { id: "2", name: "Neha Kumar", class: "Class 7 - B", attendance: "95%", lastScore: "A" },
-];
+type ChildData = {
+  id: string;
+  name: string;
+  class: string;
+  attendance: string;
+  lastScore: string;
+};
 
-export default function ParentDashboardClient() {
-  const [selectedChild, setSelectedChild] = useState(children[0]);
+export default function ParentDashboardClient({ childrenData, parentName }: { childrenData: ChildData[], parentName: string }) {
+  const [selectedChild, setSelectedChild] = useState(childrenData[0] || null);
+
+  if (!selectedChild) {
+    return <div className="p-6">No children found for this parent.</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -20,12 +27,12 @@ export default function ParentDashboardClient() {
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-display font-bold mb-2">Welcome, Mr. Kumar!</h1>
+            <h1 className="text-3xl font-display font-bold mb-2">Welcome, {parentName}!</h1>
             <p className="text-white/80 max-w-lg">Track your children&apos;s academic progress, attendance, and fee payments.</p>
           </div>
           
           <div className="flex items-center gap-3 bg-white/10 p-2 rounded-xl backdrop-blur-sm overflow-x-auto">
-            {children.map(child => (
+            {childrenData.map(child => (
               <button
                 key={child.id}
                 onClick={() => setSelectedChild(child)}

@@ -1,36 +1,55 @@
-"use client";
-
 import MetricCard from "@/components/dashboard/MetricCard";
 import { Users, UserCheck, IndianRupee, BellDot } from "lucide-react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import DashboardSkeleton from "@/components/shared/DashboardSkeleton";
+import { prisma } from "@/lib/prisma";
 
 const AttendanceChart = dynamic(() => import("@/components/dashboard/AttendanceChart"), {
   ssr: false,
   loading: () => <div className="h-[400px] w-full bg-surface border border-border rounded-xl animate-pulse flex items-center justify-center text-text-muted">Loading chart...</div>
 });
 
-export default function AdminDashboard() {
+export default async function AdminDashboard() {
+  const totalStudents = await prisma.student.count();
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const todayAttendance = await prisma.attendance.findMany({
+    where: {
+      date: {
+        gte: today,
+        lt: tomorrow,
+      }
+    }
+  });
+
+  const presentCount = todayAttendance.filter(a => a.status === 'PRESENT').length;
+  const attendancePercentage = todayAttendance.length > 0 
+    ? Math.round((presentCount / todayAttendance.length) * 100) 
+    : 100;
+
   return (
     <div className="space-y-6">
       {/* Top Section - Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           title="Total Students"
-          value={1248}
+          value={totalStudents}
           icon={Users}
           iconColor="text-role-student"
           iconBg="bg-role-student/10"
-          trend={{ value: 2.3, direction: "up", label: "vs last month" }}
+          trend={{ value: 0, direction: "up", label: "Live data" }}
         />
         <MetricCard
           title="Attendance Today"
-          value="92%"
+          value={`${attendancePercentage}%`}
           icon={UserCheck}
           iconColor="text-status-success-text"
           iconBg="bg-status-success-bg"
-          trend={{ value: 1.2, direction: "up", label: "vs yesterday" }}
+          trend={{ value: 0, direction: "up", label: "Live data" }}
         />
         <MetricCard
           title="Fee Collection"

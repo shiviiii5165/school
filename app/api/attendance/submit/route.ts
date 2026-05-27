@@ -18,11 +18,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
 
+    const teacherRecord = await prisma.teacher.findUnique({
+      where: { userId: teacherId }
+    });
+
+    if (!teacherRecord) {
+      return NextResponse.json({ error: "Teacher profile not found" }, { status: 403 });
+    }
+
     // Verify teacher is assigned to this class
     const isAssigned = await prisma.class.findFirst({
       where: {
         id: classId,
-        teacherId: teacherId,
+        teacherId: teacherRecord.id,
       },
     });
 
@@ -70,7 +78,7 @@ export async function POST(req: NextRequest) {
       classId,
       date: parsedDate,
       status: suspendedIds.has(r.studentId) ? "BLOCKED" : r.status,
-      markedBy: teacherId,
+      markedBy: teacherRecord.id,
       headCount: headCount
     }));
 
