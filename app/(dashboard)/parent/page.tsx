@@ -9,33 +9,42 @@ export default async function ParentDashboard() {
     redirect("/login");
   }
 
-  const parentData = await prisma.parent.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      students: {
-        include: {
-          user: true,
-          class: true,
-          attendanceSummary: true,
+  try {
+    const parentData = await prisma.parent.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        students: {
+          include: {
+            user: true,
+            class: true,
+            attendanceSummary: true,
+          }
         }
       }
+    });
+
+    if (!parentData) {
+      return <div className="p-6">Parent profile not found.</div>;
     }
-  });
 
-  if (!parentData) {
-    return <div className="p-6">Parent profile not found.</div>;
+    const childrenData = parentData.students.map((student) => ({
+      id: student.id,
+      name: student.user ? student.user.name : "Child",
+      class: `${student.class.name} - ${student.class.section}`,
+      attendance: student.attendanceSummary ? `${Math.round(student.attendanceSummary.attendancePercentage)}%` : "100%",
+      lastScore: "N/A",
+      isSuspended: student.isSuspended,
+      suspendedUntil: student.suspendedUntil,
+      suspendedReason: student.suspendedReason
+    }));
+
+    return <ParentDashboardClient childrenData={childrenData} parentName={session.user.name || "Parent"} />;
+  } catch (error: any) {
+    console.error("Parent dashboard error:", error);
+    return (
+      <div className="p-8 text-center">
+        <p className="text-text-secondary">Unable to load parent dashboard. Please try again.</p>
+      </div>
+    );
   }
-
-  const childrenData = parentData.students.map((student) => ({
-    id: student.id,
-    name: student.user ? student.user.name : "Child",
-    class: `${student.class.name} - ${student.class.section}`,
-    attendance: student.attendanceSummary ? `${Math.round(student.attendanceSummary.attendancePercentage)}%` : "100%",
-    lastScore: "N/A",
-    isSuspended: student.isSuspended,
-    suspendedUntil: student.suspendedUntil,
-    suspendedReason: student.suspendedReason
-  }));
-
-  return <ParentDashboardClient childrenData={childrenData} parentName={session.user.name || "Parent"} />;
 }
