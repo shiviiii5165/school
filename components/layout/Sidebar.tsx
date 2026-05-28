@@ -7,8 +7,8 @@ import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Users, UserCog, GraduationCap, 
   CreditCard, ShieldAlert, FileText, ClipboardList,
-  Settings, LogOut, ChevronLeft, ChevronRight, BookOpen,
-  CalendarDays, Mail, FileCheck2, ShieldCheck, HelpCircle
+  CalendarDays, Mail, FileCheck2, ShieldCheck, HelpCircle,
+  Trophy
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -20,6 +20,7 @@ const getNavItems = (role: string) => {
         { label: "Students", href: "/admin/students", icon: Users },
         { label: "Teachers", href: "/admin/teachers", icon: UserCog },
         { label: "Fees", href: "/admin/fees", icon: CreditCard },
+        { label: "Exams", href: "/admin/exams", icon: Trophy },
         { label: "Discipline Center", href: "/admin/discipline", icon: ShieldAlert, alert: true },
         { label: "Reports", href: "/admin/reports", icon: FileText },
         { label: "Settings", href: "/admin/settings", icon: Settings },
@@ -29,6 +30,7 @@ const getNavItems = (role: string) => {
         { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
         { label: "Attendance", href: "/teacher/attendance", icon: FileCheck2 },
         { label: "Assignments", href: "/teacher/assignments", icon: BookOpen },
+        { label: "Exams", href: "/teacher/exams", icon: Trophy },
         { label: "Results", href: "/teacher/results", icon: FileText },
         { label: "Discipline", href: "/teacher/discipline", icon: ShieldAlert },
         { label: "Timetable", href: "/teacher/timetable", icon: CalendarDays },
@@ -38,6 +40,7 @@ const getNavItems = (role: string) => {
         { label: "Dashboard", href: "/student", icon: LayoutDashboard },
         { label: "Attendance", href: "/student/attendance", icon: FileCheck2 },
         { label: "Assignments", href: "/student/assignments", icon: BookOpen },
+        { label: "Exams", href: "/student/exams", icon: Trophy },
         { label: "Results", href: "/student/results", icon: FileText },
         { label: "Notices", href: "/student/notices", icon: ClipboardList },
         { label: "Fees", href: "/student/fees", icon: CreditCard },
@@ -46,6 +49,7 @@ const getNavItems = (role: string) => {
       return [
         { label: "Dashboard", href: "/parent", icon: LayoutDashboard },
         { label: "Child Attendance", href: "/parent/attendance", icon: FileCheck2 },
+        { label: "Child Exams", href: "/parent/exams", icon: Trophy },
         { label: "Child Results", href: "/parent/results", icon: FileText },
         { label: "Fees", href: "/parent/fees", icon: CreditCard },
         { label: "Messages", href: "/parent/messages", icon: Mail },

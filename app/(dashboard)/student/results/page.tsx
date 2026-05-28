@@ -1,235 +1,269 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Award, TrendingUp, TrendingDown, BookOpen, ChevronDown,
-  Download, Printer, Trophy, Star, Target, BarChart3
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Award, ChevronRight, FileText, ArrowLeft, Trophy } from "lucide-react";
+import Link from "next/link";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getGradeColor } from "@/lib/examUtils";
 
-interface SubjectResult {
-  id: string;
-  subject: string;
-  code: string;
-  marks: number;
-  maxMarks: number;
-  grade: string;
-  teacher: string;
-  classAvg: number;
-}
+// Animated Circular Progress Ring Component
+const CircularProgress = ({ percentage }: { percentage: number }) => {
+  const [offset, setOffset] = useState(440); // 2 * pi * 70
+  
+  useEffect(() => {
+    // Animate to value
+    setTimeout(() => {
+      setOffset(440 - (440 * percentage) / 100);
+    }, 100);
+  }, [percentage]);
 
-interface ExamResult {
-  examType: string;
-  date: string;
-  subjects: SubjectResult[];
-}
+  const color = percentage >= 50 ? "#16A34A" : percentage >= 33 ? "#D97706" : "#DC2626";
 
-const examResults: ExamResult[] = [
-  {
-    examType: "Mid Term Examination",
-    date: "2026-03-15",
-    subjects: [
-      { id: "1", subject: "Mathematics", code: "MAT", marks: 45, maxMarks: 50, grade: "A+", teacher: "Rajesh Singh", classAvg: 35 },
-      { id: "2", subject: "English", code: "ENG", marks: 38, maxMarks: 50, grade: "A", teacher: "Anita Desai", classAvg: 32 },
-      { id: "3", subject: "Chemistry", code: "CHE", marks: 42, maxMarks: 50, grade: "A", teacher: "Vikram Malhotra", classAvg: 30 },
-      { id: "4", subject: "Computer Science", code: "CS", marks: 48, maxMarks: 50, grade: "A+", teacher: "Meera Nair", classAvg: 38 },
-      { id: "5", subject: "History", code: "HIS", marks: 35, maxMarks: 50, grade: "B+", teacher: "Suresh Pillai", classAvg: 29 },
-      { id: "6", subject: "Physics", code: "PHY", marks: 40, maxMarks: 50, grade: "A", teacher: "Ravi Sharma", classAvg: 33 },
-    ],
-  },
-  {
-    examType: "Unit Test 1",
-    date: "2026-02-01",
-    subjects: [
-      { id: "7", subject: "Mathematics", code: "MAT", marks: 22, maxMarks: 25, grade: "A+", teacher: "Rajesh Singh", classAvg: 17 },
-      { id: "8", subject: "English", code: "ENG", marks: 18, maxMarks: 25, grade: "B+", teacher: "Anita Desai", classAvg: 16 },
-      { id: "9", subject: "Chemistry", code: "CHE", marks: 20, maxMarks: 25, grade: "A", teacher: "Vikram Malhotra", classAvg: 15 },
-      { id: "10", subject: "Computer Science", code: "CS", marks: 24, maxMarks: 25, grade: "A+", teacher: "Meera Nair", classAvg: 19 },
-      { id: "11", subject: "History", code: "HIS", marks: 15, maxMarks: 25, grade: "C", teacher: "Suresh Pillai", classAvg: 14 },
-      { id: "12", subject: "Physics", code: "PHY", marks: 21, maxMarks: 25, grade: "A", teacher: "Ravi Sharma", classAvg: 16 },
-    ],
-  },
-];
-
-const gradeColors: Record<string, { bg: string; text: string; border: string }> = {
-  "A+": { bg: "bg-status-success", text: "text-white", border: "border-status-success" },
-  "A": { bg: "bg-status-success/80", text: "text-white", border: "border-status-success/80" },
-  "B+": { bg: "bg-primary", text: "text-white", border: "border-primary" },
-  "B": { bg: "bg-primary/80", text: "text-white", border: "border-primary/80" },
-  "C": { bg: "bg-status-warning", text: "text-white", border: "border-status-warning" },
-  "D": { bg: "bg-status-warning/70", text: "text-white", border: "border-status-warning/70" },
-  "F": { bg: "bg-status-danger", text: "text-white", border: "border-status-danger" },
+  return (
+    <div className="relative w-40 h-40 flex items-center justify-center">
+      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+        <circle
+          cx="80" cy="80" r="70"
+          stroke="#E2E8F0"
+          strokeWidth="10"
+          fill="none"
+        />
+        <circle
+          cx="80" cy="80" r="70"
+          stroke={color}
+          strokeWidth="10"
+          fill="none"
+          strokeLinecap="round"
+          style={{
+            strokeDasharray: 440,
+            strokeDashoffset: offset,
+            transition: "stroke-dashoffset 1s ease-out"
+          }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-3xl font-bold font-mono" style={{ color }}>
+          {percentage.toFixed(1)}%
+        </span>
+      </div>
+    </div>
+  );
 };
 
 export default function StudentResultsPage() {
-  const [selectedExam, setSelectedExam] = useState(0);
-  const exam = examResults[selectedExam];
+  const [summaries, setSummaries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
+  const [examDetail, setExamDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const totalMarks = exam.subjects.reduce((acc, s) => acc + s.marks, 0);
-  const totalMaxMarks = exam.subjects.reduce((acc, s) => acc + s.maxMarks, 0);
-  const overallPercent = Math.round((totalMarks / totalMaxMarks) * 100);
-  const highestSubject = exam.subjects.reduce((a, b) => (a.marks / a.maxMarks) > (b.marks / b.maxMarks) ? a : b);
-  const lowestSubject = exam.subjects.reduce((a, b) => (a.marks / a.maxMarks) < (b.marks / b.maxMarks) ? a : b);
+  useEffect(() => {
+    fetch("/api/student/results")
+      .then(res => res.json())
+      .then(data => {
+        if (data.results) {
+          setSummaries(data.results);
+          if (data.results.length > 0) {
+            handleSelectExam(data.results[0].examId);
+          }
+        }
+        setLoading(false);
+      })
+      .catch(console.error);
+  }, []);
 
-  const overallGrade = overallPercent >= 90 ? "A+" : overallPercent >= 80 ? "A" : overallPercent >= 70 ? "B+" : overallPercent >= 60 ? "B" : overallPercent >= 50 ? "C" : overallPercent >= 40 ? "D" : "F";
-  const gc = gradeColors[overallGrade] || gradeColors["F"];
+  const handleSelectExam = async (examId: string) => {
+    setSelectedExamId(examId);
+    setDetailLoading(true);
+    try {
+      const res = await fetch(`/api/student/results/${examId}`);
+      const data = await res.json();
+      if (data.summary) setExamDetail(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-center text-text-secondary animate-pulse">Loading results...</div>;
+
+  if (summaries.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-text-primary">My Results</h1>
+          <p className="text-sm text-text-secondary">Track your academic performance.</p>
+        </div>
+        <div className="bg-surface rounded-xl border border-border p-12 text-center flex flex-col items-center shadow-card">
+          <div className="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center mb-4">
+            <Trophy className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-lg font-bold text-text-primary mb-2">No Results Published Yet</h3>
+          <p className="text-text-secondary max-w-sm">Your examination results will appear here once they are published by the administration.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Data for Recharts Trend
+  const trendData = [...summaries].reverse().map(s => ({
+    name: s.examName.substring(0, 10), // truncate for chart
+    percentage: s.percentage
+  }));
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-display font-bold text-text-primary">My Results</h1>
-          <p className="text-sm text-text-secondary mt-1">View your grades, report cards, and performance trends</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedExam}
-            onChange={(e) => setSelectedExam(Number(e.target.value))}
-            className="border border-border rounded-md px-4 py-2 bg-surface text-text-primary text-sm focus:outline-none focus:border-primary font-medium"
-          >
-            {examResults.map((ex, i) => (
-              <option key={i} value={i}>{ex.examType}</option>
-            ))}
-          </select>
-          <button className="flex items-center gap-2 border border-border bg-surface hover:bg-background text-text-primary px-4 py-2 rounded-md text-sm font-medium transition-colors">
-            <Download className="w-4 h-4" />
-            Download
-          </button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-text-primary">Academic Results</h1>
+        <p className="text-sm text-text-secondary">View your detailed marks, grades, and performance trends.</p>
       </div>
 
-      {/* Overall Score Card */}
-      <div className="bg-gradient-to-br from-primary to-primary-dark rounded-2xl p-6 text-white shadow-dropdown relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2" />
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <p className="text-white/70 text-xs font-semibold uppercase tracking-wider mb-1">{exam.examType}</p>
-              <div className="flex items-baseline gap-3">
-                <span className="text-5xl font-display font-bold">{overallPercent}%</span>
-                <span className={`text-sm font-bold px-3 py-1 rounded-full ${gc.bg === "bg-status-success" ? "bg-white/20" : "bg-white/20"}`}>
-                  Grade {overallGrade}
-                </span>
-              </div>
-              <p className="text-white/80 text-sm mt-2">
-                {totalMarks} out of {totalMaxMarks} marks • {exam.subjects.length} subjects
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        {/* Sidebar List */}
+        <div className="lg:col-span-1 space-y-4">
+          <h3 className="font-bold text-text-primary mb-2 px-1">Published Exams</h3>
+          {summaries.map(s => (
+            <button
+              key={s.examId}
+              onClick={() => handleSelectExam(s.examId)}
+              className={`w-full text-left p-4 rounded-xl border transition-all ${
+                selectedExamId === s.examId 
+                  ? "bg-primary text-white border-primary shadow-md" 
+                  : "bg-surface border-border hover:border-primary/50 text-text-primary"
+              }`}
+            >
+              <h4 className="font-bold text-lg mb-1 truncate">{s.examName}</h4>
+              <p className={`text-xs font-mono mb-2 ${selectedExamId === s.examId ? "text-primary-light" : "text-text-muted"}`}>
+                {new Date(s.date).toLocaleDateString()}
               </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[130px]">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="w-4 h-4 text-white/70" />
-                  <p className="text-xs text-white/70 font-medium">Best Subject</p>
-                </div>
-                <p className="font-bold text-lg">{highestSubject.subject}</p>
-                <p className="text-sm text-white/70">{Math.round((highestSubject.marks / highestSubject.maxMarks) * 100)}%</p>
+              <div className="flex justify-between items-center text-sm font-bold">
+                <span>{s.percentage.toFixed(1)}%</span>
+                <span>{s.grade}</span>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 min-w-[130px]">
-                <div className="flex items-center gap-2 mb-1">
-                  <Target className="w-4 h-4 text-white/70" />
-                  <p className="text-xs text-white/70 font-medium">Needs Work</p>
-                </div>
-                <p className="font-bold text-lg">{lowestSubject.subject}</p>
-                <p className="text-sm text-white/70">{Math.round((lowestSubject.marks / lowestSubject.maxMarks) * 100)}%</p>
-              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Detail View */}
+        <div className="lg:col-span-3 space-y-6">
+          {detailLoading ? (
+            <div className="bg-surface rounded-xl border border-border p-12 text-center shadow-card h-96 flex items-center justify-center">
+              <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
             </div>
-          </div>
-        </div>
-      </div>
+          ) : examDetail ? (
+            <>
+              {/* Hero Card */}
+              <div className="bg-surface rounded-xl border border-border p-6 shadow-card flex flex-col md:flex-row items-center gap-8">
+                <CircularProgress percentage={examDetail.summary.percentage} />
+                
+                <div className="flex-1 space-y-4 text-center md:text-left">
+                  <div>
+                    <h2 className="text-2xl font-bold text-text-primary">{examDetail.summary.examName}</h2>
+                    <p className="text-text-secondary mt-1">Final Result Summary</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="p-3 bg-slate-50 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">Total Marks</p>
+                      <p className="font-mono font-bold text-lg">{examDetail.summary.totalMarks} / {examDetail.summary.maxMarks}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">Overall Grade</p>
+                      <p className={`font-bold text-lg ${getGradeColor(examDetail.summary.grade).split(' ')[0]}`}>{examDetail.summary.grade}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">Class Rank</p>
+                      <p className="font-mono font-bold text-lg text-primary">#{examDetail.summary.rank}</p>
+                    </div>
+                    <div className="p-3 bg-slate-50 rounded-lg border border-border">
+                      <p className="text-xs text-text-muted mb-1">Status</p>
+                      <p className={`font-bold text-lg ${examDetail.summary.isPassed ? "text-green-600" : "text-red-600"}`}>
+                        {examDetail.summary.isPassed ? "PASSED" : "FAILED"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-      {/* Subject-wise Results */}
-      <div className="bg-surface rounded-xl shadow-card border border-border overflow-hidden">
-        <div className="p-5 border-b border-border">
-          <h2 className="text-base font-semibold text-text-primary flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            Subject-wise Breakdown
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-background text-text-muted text-xs uppercase border-b border-border">
-              <tr>
-                <th className="px-5 py-3 font-medium">Subject</th>
-                <th className="px-5 py-3 font-medium text-center">Marks</th>
-                <th className="px-5 py-3 font-medium text-center">Grade</th>
-                <th className="px-5 py-3 font-medium">Performance</th>
-                <th className="px-5 py-3 font-medium text-center">Class Avg</th>
-                <th className="px-5 py-3 font-medium text-center">vs Class</th>
-              </tr>
-            </thead>
-            <tbody>
-              {exam.subjects.map((subject, idx) => {
-                const pct = Math.round((subject.marks / subject.maxMarks) * 100);
-                const classAvgPct = Math.round((subject.classAvg / subject.maxMarks) * 100);
-                const diff = pct - classAvgPct;
-                const gc = gradeColors[subject.grade] || gradeColors["F"];
+              {/* Performance Trend Chart */}
+              <div className="bg-surface rounded-xl border border-border p-6 shadow-card">
+                <h3 className="font-bold text-lg text-text-primary mb-4">Performance Trend</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dy={10} />
+                      <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748B' }} dx={-10} />
+                      <Tooltip 
+                        contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: number) => [`${value.toFixed(1)}%`, 'Score']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="percentage" 
+                        stroke="#2563EB" 
+                        strokeWidth={3}
+                        dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                        activeDot={{ r: 6, strokeWidth: 0, fill: '#2563EB' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
 
-                return (
-                  <tr
-                    key={subject.id}
-                    className={`border-b border-border last:border-0 transition-colors hover:bg-background/60 ${
-                      idx % 2 === 0 ? "" : "bg-background/30"
-                    }`}
-                  >
-                    <td className="px-5 py-4">
-                      <div>
-                        <span className="font-medium text-text-primary">{subject.subject}</span>
-                        <p className="text-xs text-text-muted mt-0.5">{subject.teacher}</p>
+              {/* Subject Cards Grid */}
+              <div>
+                <h3 className="font-bold text-lg text-text-primary mb-4 px-1">Subject-wise Breakdown</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {examDetail.subjects.map((sub: any) => (
+                    <div key={sub.id} className="bg-surface border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                      {/* Accent strip */}
+                      <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                        sub.isAbsent ? "bg-slate-400" :
+                        sub.marks >= sub.maxMarks * 0.9 ? "bg-emerald-500" :
+                        sub.marks >= sub.maxMarks * 0.7 ? "bg-blue-500" :
+                        sub.marks >= sub.maxMarks * 0.5 ? "bg-amber-500" : "bg-red-500"
+                      }`} />
+                      
+                      <div className="flex justify-between items-start mb-4 pl-2">
+                        <div>
+                          <h4 className="font-bold text-text-primary text-lg">{sub.subject}</h4>
+                          <p className="text-xs text-text-muted mt-0.5">Teacher: {sub.teacher}</p>
+                        </div>
+                        {sub.isAbsent ? (
+                          <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-xs font-bold">ABSENT</span>
+                        ) : (
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${getGradeColor(sub.grade)}`}>{sub.grade}</span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className="font-mono font-bold text-text-primary text-base">{subject.marks}</span>
-                      <span className="text-text-muted text-xs">/{subject.maxMarks}</span>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold ${gc.bg} ${gc.text}`}>
-                        {subject.grade}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3 min-w-[160px]">
-                        <div className="flex-1">
-                          <div className="w-full bg-background rounded-full h-2.5 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${
-                                pct >= 80 ? "bg-status-success" : pct >= 60 ? "bg-primary" : pct >= 40 ? "bg-status-warning" : "bg-status-danger"
-                              }`}
-                              style={{ width: `${pct}%` }}
+
+                      <div className="pl-2 space-y-3">
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-text-secondary">Obtained</span>
+                            <span className="font-mono font-bold text-text-primary">{sub.isAbsent ? 0 : sub.marks} / {sub.maxMarks}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${sub.isAbsent ? 'bg-slate-300' : 'bg-primary'}`}
+                              style={{ width: `${sub.isAbsent ? 0 : (sub.marks / sub.maxMarks) * 100}%` }}
                             />
                           </div>
                         </div>
-                        <span className="text-sm font-medium text-text-primary w-10 text-right">{pct}%</span>
+
+                        <div className="flex justify-between items-center text-xs text-text-muted pt-2 border-t border-border border-dashed">
+                          <span>Class Average</span>
+                          <span className="font-mono font-medium">{sub.classAvg} / {sub.maxMarks}</span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className="font-mono text-text-secondary">{subject.classAvg}/{subject.maxMarks}</span>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className={`inline-flex items-center gap-1 text-sm font-semibold ${
-                        diff > 0 ? "text-status-success-text" : diff < 0 ? "text-status-danger-text" : "text-text-muted"
-                      }`}>
-                        {diff > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : diff < 0 ? <TrendingDown className="w-3.5 h-3.5" /> : null}
-                        {diff > 0 ? "+" : ""}{diff}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {/* Total Row */}
-        <div className="bg-background border-t-2 border-border px-5 py-4 flex items-center justify-between">
-          <span className="font-semibold text-text-primary">Total</span>
-          <div className="flex items-center gap-8">
-            <span className="font-mono font-bold text-lg text-text-primary">{totalMarks}<span className="text-text-muted text-sm">/{totalMaxMarks}</span></span>
-            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold ${gradeColors[overallGrade]?.bg} ${gradeColors[overallGrade]?.text}`}>
-              {overallGrade}
-            </span>
-            <span className="font-bold text-text-primary text-lg">{overallPercent}%</span>
-          </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
     </div>

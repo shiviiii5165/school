@@ -69,6 +69,9 @@ model Student {
   disciplineReports DisciplineReport[]
   attendanceRecords Attendance[]
   attendanceSummary AttendanceSummary?
+  examResults       ExamResult[]
+  examSummaries     ExamSummary[]
+  hallTickets       HallTicket[]
 }
 
 model Parent {
@@ -103,6 +106,7 @@ model Class {
   assignments        Assignment[]
   timetablePeriods   TimetablePeriod[]
   DailyAttendanceLog DailyAttendanceLog[]
+  examSlots          ExamSlot[]
 }
 
 model Subject {
@@ -116,6 +120,7 @@ model Subject {
 
   assignments      Assignment[]
   timetablePeriods TimetablePeriod[]
+  examSlots        ExamSlot[]
 }
 
 model Attendance {
@@ -345,4 +350,118 @@ model FeeType {
   applicableTo String  @default("ALL")
   description  String?
   isActive     Boolean @default(true)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXAMINATION SYSTEM
+// ═══════════════════════════════════════════════════════════════
+
+enum ExamType {
+  UNIT_TEST_1
+  UNIT_TEST_2
+  MID_TERM
+  PRE_BOARD
+  FINAL
+  PRACTICAL
+}
+
+enum ExamStatus {
+  DRAFT
+  SCHEDULED
+  ONGOING
+  MARKS_ENTRY
+  COMPLETED
+}
+
+model Exam {
+  id            String     @id @default(cuid())
+  name          String
+  type          ExamType
+  academicYear  String     // "2025-26"
+  status        ExamStatus @default(DRAFT)
+  startDate     DateTime
+  endDate       DateTime
+  defaultPassPct Float     @default(33)
+  createdBy     String     // adminId
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  slots         ExamSlot[]
+  results       ExamResult[]
+  summaries     ExamSummary[]
+  hallTickets   HallTicket[]
+}
+
+model ExamSlot {
+  id         String   @id @default(cuid())
+  examId     String
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  classId    String
+  class      Class    @relation(fields: [classId], references: [id])
+  subjectId  String
+  subject    Subject  @relation(fields: [subjectId], references: [id])
+  date       DateTime @db.Date
+  startTime  String   // "09:00"
+  endTime    String   // "12:00"
+  room       String
+  maxMarks   Float
+  passMarks  Float    @default(33)
+  isLocked   Boolean  @default(false)
+
+  results    ExamResult[]
+
+  @@unique([examId, classId, subjectId])
+  @@unique([classId, date, startTime])
+}
+
+model ExamResult {
+  id        String   @id @default(cuid())
+  examId    String
+  exam      Exam     @relation(fields: [examId], references: [id])
+  slotId    String
+  slot      ExamSlot @relation(fields: [slotId], references: [id])
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id])
+  marks     Float?   // null = not entered yet
+  isAbsent  Boolean  @default(false)
+  grade     String?  // auto-computed
+  remarks   String?
+  enteredBy String   // teacherId
+  enteredAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([slotId, studentId])
+  @@index([examId, studentId])
+}
+
+model ExamSummary {
+  id            String   @id @default(cuid())
+  examId        String
+  exam          Exam     @relation(fields: [examId], references: [id])
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id])
+  totalMarks    Float    @default(0)
+  maxMarks      Float    @default(0)
+  percentage    Float    @default(0)
+  grade         String   @default("")
+  rank          Int?
+  isPassed      Boolean  @default(false)
+  isPublished   Boolean  @default(false)
+  computedAt    DateTime @default(now())
+
+  @@unique([examId, studentId])
+}
+
+model HallTicket {
+  id          String   @id @default(cuid())
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id])
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id])
+  isBlocked   Boolean  @default(false)
+  blockReason String?
+  blockedBy   String?  // adminId — null means auto-blocked
+  generatedAt DateTime @default(now())
+
+  @@unique([examId, studentId])
 }
