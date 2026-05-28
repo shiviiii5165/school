@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
         userId: admin.id,
         title: "New Discipline Report",
         message: `A new discipline report has been submitted for category: ${category}.`,
-        type: "DISCIPLINE",
+        type: "DISCIPLINE" as "DISCIPLINE",
       }));
 
       if (notifications.length > 0) {

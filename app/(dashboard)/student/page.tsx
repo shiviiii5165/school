@@ -1,23 +1,51 @@
-"use client";
-
 import MetricCard from "@/components/dashboard/MetricCard";
-import { BookOpen, FileText, Calendar, Award, ChevronRight, Bell } from "lucide-react";
+import { BookOpen, FileText, Calendar, Award, ChevronRight, Bell, Lock } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-export default function StudentDashboard() {
+const formatDate = (date: Date | null) => date ? date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+
+export default async function StudentDashboard() {
+  const session = await auth();
+  const student = await prisma.student.findUnique({
+    where: { userId: session?.user?.id },
+    include: { user: true }
+  });
+
   return (
     <div className="space-y-6">
+      {/* SUSPENSION BANNER */}
+      {student?.isSuspended && (
+        <div className="flex gap-3 p-4 bg-danger-bg border border-danger/20 rounded-xl mb-6">
+          <div className="w-10 h-10 rounded-full bg-danger/10 flex items-center justify-center flex-shrink-0">
+            <Lock size={20} className="text-danger"/>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-danger">Account Suspended</p>
+            <p className="text-sm text-text-secondary mt-0.5">
+              You are suspended from <strong>{formatDate(student.suspendedFrom)}</strong> to{' '}
+              <strong>{formatDate(student.suspendedUntil)}</strong>.
+            </p>
+            <p className="text-xs text-text-muted mt-1">Reason: {student.suspendedReason}</p>
+            <p className="text-xs text-success mt-1">
+              ✓ Access automatically restores on {formatDate(student.suspendedUntil)}.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-role-student to-cyan-700 rounded-2xl p-8 text-white shadow-dropdown relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-display font-bold mb-2">Welcome back, Rahul!</h1>
-            <p className="text-white/80 max-w-lg">Class 10 - A • You have 2 pending assignments due this week. Keep up the good work!</p>
+            <h1 className="text-3xl font-display font-bold mb-2">Welcome back, {student?.user?.name || "Student"}!</h1>
+            <p className="text-white/80 max-w-lg">You have 2 pending assignments due this week. Keep up the good work!</p>
           </div>
           <div className="shrink-0 bg-white/20 backdrop-blur-md rounded-xl p-4 text-center min-w-[120px]">
             <p className="text-xs font-semibold uppercase tracking-wider mb-1">Attendance</p>
-            <p className="text-3xl font-display font-bold">92%</p>
+            <p className="text-3xl font-display font-bold">{student?.attendancePercentage?.toFixed(0) || 100}%</p>
           </div>
         </div>
       </div>

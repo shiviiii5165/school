@@ -2,6 +2,7 @@
 
 import { Bell, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 
 const getPageTitle = (pathname: string) => {
   const parts = pathname.split("/").filter(Boolean);
@@ -32,10 +33,7 @@ export default function Topbar({ user }: { user: { name: string; role: string; a
         </div>
 
         <div className="flex items-center gap-4">
-          <button className="relative p-2 text-text-secondary hover:bg-background rounded-full transition-colors">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-status-danger rounded-full border-2 border-surface"></span>
-          </button>
+          <NotificationBell role={user.role} />
 
           <div className="h-8 w-px bg-border"></div>
 

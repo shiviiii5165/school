@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { createNotifications } from "@/lib/notifications";
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,7 +20,8 @@ export async function POST(req: NextRequest) {
     }
 
     const teacherRecord = await prisma.teacher.findUnique({
-      where: { userId: teacherId }
+      where: { userId: teacherId },
+      include: { user: true }
     });
 
     if (!teacherRecord) {
@@ -46,8 +48,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cannot mark attendance for future dates" }, { status: 400 });
     }
 
-    // Block attendance for suspended students — enforce at backend
     const studentIds = records.map((r: any) => r.studentId);
+
+    // Auto-lift expired suspensions at runtime before processing
+    const now = new Date();
+    const allStudents = await prisma.student.findMany({
+      where: { id: { in: studentIds } },
+    });
+    
+    for (const student of allStudents) {
+      if (student.isSuspended && student.suspendedUntil && student.suspendedUntil <= now) {
+        await prisma.student.update({
+          where: { id: student.id },
+          data:  { isSuspended: false, suspendedUntil: null, suspendedFrom: null, suspendedReason: null }
+        });
+      }
+    }
+
+    // Block attendance for currently suspended students
     const suspendedStudents = await prisma.student.findMany({
       where: { id: { in: studentIds }, isSuspended: true },
       select: { id: true },
@@ -179,6 +197,37 @@ export async function POST(req: NextRequest) {
         headCount: headCount || records.length,
       }
     });
+
+    // Prepare notifications for absentees
+    const absentStudentIds = attendanceData.filter((r: any) => r.status === 'ABSENT').map((r: any) => r.studentId);
+    if (absentStudentIds.length > 0) {
+      const absentStudents = await prisma.student.findMany({
+        where: { id: { in: absentStudentIds } },
+        include: { user: true, parent: true }
+      });
+      
+      const notifications = absentStudents.map(student => ({
+        userId: student.parent?.userId,
+        title: 'Attendance Alert',
+        message: `${student.user.name} was marked ABSENT today (${parsedDate.toLocaleDateString()}).`,
+        type: 'ATTENDANCE' as any,
+        link: '/parent/attendance'
+      }));
+      
+      await createNotifications(notifications);
+    }
+
+    // Notify Admin about attendance submission
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+    if (admins.length > 0) {
+      await createNotifications(admins.map(admin => ({
+        userId: admin.id,
+        title: 'Attendance Submitted',
+        message: `Teacher ${teacherRecord.user.name} submitted attendance for class. Present: ${present}, Absent: ${absent}`,
+        type: 'ATTENDANCE' as any,
+        link: '/admin/attendance'
+      })));
+    }
 
     return NextResponse.json({ success: true, message: "Attendance saved successfully" });
 

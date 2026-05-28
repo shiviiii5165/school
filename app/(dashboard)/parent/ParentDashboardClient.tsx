@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import MetricCard from "@/components/dashboard/MetricCard";
-import { Users, IndianRupee, Bell, Award, ChevronRight, GraduationCap, Clock } from "lucide-react";
+import { Users, IndianRupee, Bell, Award, ChevronRight, GraduationCap, Clock, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 type ChildData = {
@@ -11,6 +11,9 @@ type ChildData = {
   class: string;
   attendance: string;
   lastScore: string;
+  isSuspended?: boolean;
+  suspendedUntil?: Date | null;
+  suspendedReason?: string | null;
 };
 
 export default function ParentDashboardClient({ childrenData, parentName }: { childrenData: ChildData[], parentName: string }) {
@@ -51,6 +54,23 @@ export default function ParentDashboardClient({ childrenData, parentName }: { ch
           </div>
         </div>
       </div>
+
+      {/* SUSPENSION BANNER */}
+      {selectedChild.isSuspended && (
+        <div className="flex gap-3 p-4 bg-warning-bg border border-warning/20 rounded-xl mb-4">
+          <AlertTriangle size={20} className="text-warning flex-shrink-0 mt-0.5"/>
+          <div>
+            <p className="text-sm font-semibold text-warning-text">Suspension Notice</p>
+            <p className="text-sm text-text-secondary">
+              {selectedChild.name} is suspended until <strong>{selectedChild.suspendedUntil ? new Date(selectedChild.suspendedUntil).toLocaleDateString() : 'Unknown'}</strong>.
+            </p>
+            <p className="text-xs text-text-muted mt-1">Reason: {selectedChild.suspendedReason}</p>
+            <button className="text-xs text-primary hover:underline mt-1">
+              Contact school →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Metrics for Selected Child */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

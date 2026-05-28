@@ -72,6 +72,7 @@ export default function TeacherAttendancePage() {
             avatar: s.user?.avatar || null,
             isSuspended: s.isSuspended || false,
             suspensionReason: s.suspendedReason || "",
+            suspendedUntil: s.suspendedUntil || null,
           }));
 
           // Sort by roll number ascending

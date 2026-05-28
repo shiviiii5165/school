@@ -41,7 +41,7 @@ export async function PATCH(
         userId: report.teacher.userId,
         title: "Discipline Report Reviewed",
         message: `Your report has been marked as ${action}.`,
-        type: "DISCIPLINE_UPDATE",
+        type: "DISCIPLINE",
       },
     });
 

@@ -31,7 +31,10 @@ export default async function ParentDashboard() {
     name: student.user ? student.user.name : "Child",
     class: `${student.class.name} - ${student.class.section}`,
     attendance: student.attendanceSummary ? `${Math.round(student.attendanceSummary.attendancePercentage)}%` : "100%",
-    lastScore: "N/A"
+    lastScore: "N/A",
+    isSuspended: student.isSuspended,
+    suspendedUntil: student.suspendedUntil,
+    suspendedReason: student.suspendedReason
   }));
 
   return <ParentDashboardClient childrenData={childrenData} parentName={session.user.name || "Parent"} />;

@@ -58,7 +58,7 @@ export async function PATCH(
       userId: report.teacher.userId,
       title: "Student Suspended",
       message: `Action taken on your report: Student ${report.student.user.name} has been suspended.`,
-      type: "DISCIPLINE_UPDATE",
+      type: "DISCIPLINE" as "DISCIPLINE",
     });
 
     // Student notification
@@ -66,7 +66,7 @@ export async function PATCH(
       userId: report.student.userId,
       title: "Account Suspended",
       message: `You have been suspended for: ${report.category}. Please contact administration.`,
-      type: "ACCOUNT_SUSPENDED",
+      type: "DISCIPLINE" as "DISCIPLINE",
     });
 
     // Parent notification (if linked)
@@ -75,7 +75,7 @@ export async function PATCH(
         userId: report.student.parent.userId,
         title: "Ward Suspended",
         message: `Your ward ${report.student.user.name} has been suspended. Please contact the school.`,
-        type: "ACCOUNT_SUSPENDED",
+        type: "DISCIPLINE" as "DISCIPLINE",
       });
     }
 

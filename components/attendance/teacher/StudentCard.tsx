@@ -10,9 +10,10 @@ interface StudentCardProps {
   avatar?: string | null;
   isSuspended?: boolean;
   suspensionReason?: string;
+  suspendedUntil?: Date | null | string;
 }
 
-const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, suspensionReason }: StudentCardProps) => {
+const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, suspensionReason, suspendedUntil }: StudentCardProps) => {
   const status = useAttendanceStore((state) => state.attendanceMap[id]);
   const setStatus = useAttendanceStore((state) => state.setStatus);
 
@@ -20,6 +21,8 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
   const isAbsent = status === 'ABSENT';
 
   if (isSuspended) {
+    const daysLeft = suspendedUntil ? Math.ceil((new Date(suspendedUntil).getTime() - new Date().getTime()) / 86400000) : 0;
+    
     return (
       <div className="grid grid-cols-[120px_1fr_180px] md:grid-cols-[180px_1fr_240px] items-center px-4 md:px-6 py-2.5 min-h-[48px] border-b border-border bg-[#FEF2F2] hover:bg-[#FEE2E2] transition-colors relative">
         <div className="text-xs font-mono text-text-muted">{regId}</div>
@@ -31,7 +34,14 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
               <span className="text-xs font-semibold text-text-secondary">{name.substring(0, 2).toUpperCase()}</span>
             )}
           </div>
-          <span className="text-sm font-medium text-text-primary truncate">{name}</span>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-text-primary truncate">{name}</span>
+            {daysLeft > 0 && (
+              <div className="text-[10px] text-danger-text mt-0.5 font-medium">
+                🔒 Suspended · {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-center md:justify-start">
            <button

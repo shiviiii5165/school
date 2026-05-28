@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model School {
@@ -54,6 +55,11 @@ model Student {
   isSuspended          Boolean   @default(false)
   suspendedReason      String?
   suspendedAt          DateTime?
+  suspendedFrom        DateTime?
+  suspendedUntil       DateTime?
+  warningCount         Int       @default(0)
+  lastWarningAt        DateTime?
+  lastWarningNote      String?
   attendancePercentage Float     @default(100)
   examEligible         Boolean   @default(true)
   detainedAt           DateTime?
@@ -231,7 +237,20 @@ model DisciplineReport {
   reviewedBy  String? // adminId
   reviewedAt  DateTime?
   actionTaken String?
+  
+  actionType      ActionType?
+  suspendedFrom   DateTime?
+  suspendedUntil  DateTime?
+  warningNote     String?
+  resolvedAt      DateTime?
+
   createdAt   DateTime  @default(now())
+}
+
+enum ActionType {
+  WARNING
+  SUSPENSION
+  DISMISSED
 }
 
 model Notice {
@@ -257,14 +276,26 @@ model Leave {
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  type      String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  type      NotificationType
+  isRead    Boolean          @default(false)
+  link      String?
+  metadata  Json?            // extra data (studentId, reportId etc)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+}
+
+enum NotificationType {
+  DISCIPLINE
+  ATTENDANCE
+  FEE
+  ACADEMIC
+  SYSTEM
 }
 
 model TimetablePeriod {

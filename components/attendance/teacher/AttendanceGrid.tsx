@@ -9,6 +9,7 @@ interface Student {
   avatar?: string | null;
   isSuspended?: boolean;
   suspensionReason?: string;
+  suspendedUntil?: Date | null | string;
 }
 
 export default function AttendanceGrid({ students }: { students: Student[] }) {
@@ -41,6 +42,7 @@ export default function AttendanceGrid({ students }: { students: Student[] }) {
             avatar={student.avatar}
             isSuspended={student.isSuspended}
             suspensionReason={student.suspensionReason}
+            suspendedUntil={student.suspendedUntil}
           />
         ))}
       </div>
