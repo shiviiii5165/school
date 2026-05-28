@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DataTable from "@/components/shared/DataTable";
-import { ShieldAlert, AlertTriangle, CheckCircle2, XCircle, Lock, Loader2, Ban } from "lucide-react";
+import { ShieldAlert, AlertTriangle, CheckCircle2, XCircle, Lock, Loader2, Ban, Unlock } from "lucide-react";
 
 interface DisciplineReport {
   id: string;
@@ -23,7 +23,8 @@ export default function AdminDisciplinePage() {
   const queryClient = useQueryClient();
   const [selectedReport, setSelectedReport] = useState<DisciplineReport | null>(null);
   const [adminNote, setAdminNote] = useState("");
-  const [showToast, setShowToast] = useState<{show: boolean, type: "review" | "suspend" | "dismiss" | "warning", message?: string}>({show: false, type: "review"});
+  const [durationDays, setDurationDays] = useState(1);
+  const [showToast, setShowToast] = useState<{show: boolean, type: "review" | "suspend" | "dismiss" | "warning" | "lift", message?: string}>({show: false, type: "review"});
 
   // Fetch reports with auto-polling every 5 seconds
   const { data, isLoading } = useQuery({
@@ -65,11 +66,11 @@ export default function AdminDisciplinePage() {
 
   // Suspend mutation
   const suspendMutation = useMutation({
-    mutationFn: async ({ id, note }: { id: string; note: string }) => {
+    mutationFn: async ({ id, note, durationDays }: { id: string; note: string; durationDays: number }) => {
       const res = await fetch(`/api/discipline/reports/${id}/suspend`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adminNote: note }),
+        body: JSON.stringify({ adminNote: note, durationDays }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -81,12 +82,34 @@ export default function AdminDisciplinePage() {
       queryClient.invalidateQueries({ queryKey: ["discipline-reports"] });
       setSelectedReport(null);
       setAdminNote("");
+      setDurationDays(1);
       setShowToast({ show: true, type: "suspend" });
       setTimeout(() => setShowToast({ show: false, type: "review" }), 4000);
     },
   });
 
-  const isProcessing = reviewMutation.isPending || suspendMutation.isPending;
+  // Lift Suspension mutation
+  const liftMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/discipline/reports/${id}/lift-suspension`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to lift suspension");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discipline-reports"] });
+      setSelectedReport(null);
+      setShowToast({ show: true, type: "lift" });
+      setTimeout(() => setShowToast({ show: false, type: "review" }), 4000);
+    },
+  });
+
+  const isProcessing = reviewMutation.isPending || suspendMutation.isPending || liftMutation.isPending;
 
   const columns = [
     {
@@ -154,16 +177,21 @@ export default function AdminDisciplinePage() {
               ? "bg-status-danger border-status-danger-text text-white" 
               : showToast.type === "dismiss"
               ? "bg-background border-border text-text-primary"
+              : showToast.type === "lift"
+              ? "bg-status-success border-status-success text-white"
               : "bg-status-success-bg border-status-success text-status-success-text"
           }`}>
             <div className="flex items-center gap-3">
-              {showToast.type === "suspend" ? <Lock className="w-5 h-5" /> : showToast.type === "dismiss" ? <Ban className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
+              {showToast.type === "suspend" ? <Lock className="w-5 h-5" /> : showToast.type === "dismiss" ? <Ban className="w-5 h-5" /> : showToast.type === "lift" ? <Unlock className="w-5 h-5" /> : <CheckCircle2 className="w-5 h-5" />}
               <p className="font-medium text-sm">
-                {showToast.type === "suspend" ? "Student Suspended" : showToast.type === "dismiss" ? "Report Dismissed" : showToast.type === "warning" ? "Warning Issued" : "Report Reviewed"}
+                {showToast.type === "suspend" ? "Student Suspended" : showToast.type === "dismiss" ? "Report Dismissed" : showToast.type === "warning" ? "Warning Issued" : showToast.type === "lift" ? "Suspension Lifted" : "Report Reviewed"}
               </p>
             </div>
             {showToast.type === "suspend" && (
               <p className="text-xs opacity-90 ml-8">Suspension chain activated. Attendance & portal access blocked.</p>
+            )}
+            {showToast.type === "lift" && (
+              <p className="text-xs opacity-90 ml-8">Attendance and portal access have been restored.</p>
             )}
           </div>
         </div>
@@ -220,7 +248,7 @@ export default function AdminDisciplinePage() {
                   <p className="text-sm text-text-secondary">Reported on {new Date(selectedReport.date).toLocaleDateString('en-IN')}</p>
                 </div>
               </div>
-              <button onClick={() => setSelectedReport(null)} className="p-2 hover:bg-background rounded-full transition-colors">
+              <button onClick={() => { setSelectedReport(null); setDurationDays(1); }} className="p-2 hover:bg-background rounded-full transition-colors">
                 <XCircle className="w-6 h-6 text-text-muted" />
               </button>
             </div>
@@ -286,8 +314,24 @@ export default function AdminDisciplinePage() {
                     onChange={(e) => setAdminNote(e.target.value)}
                     placeholder="Enter official remarks or action taken..."
                     rows={4}
-                    className="w-full p-3 border border-border rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none bg-surface"
+                    className="w-full p-3 border border-border rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none bg-surface mb-4"
                   />
+                  
+                  {/* Suspension Inputs */}
+                  <div className="bg-background border border-border rounded-xl p-4 flex flex-col gap-4">
+                    <div>
+                      <label className="text-sm font-bold text-text-primary mb-1 block">Suspension Duration (Days)</label>
+                      <input 
+                        type="number" 
+                        min="1" 
+                        max="365"
+                        value={durationDays} 
+                        onChange={(e) => setDurationDays(parseInt(e.target.value) || 1)}
+                        className="w-full sm:w-32 p-2 border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                      />
+                      <p className="text-xs text-text-muted mt-1">If suspending, this duration will be used to automatically unblock attendance later.</p>
+                    </div>
+                  </div>
                   
                   {/* Suspension Warning */}
                   <div className="mt-4 bg-status-danger-bg border border-status-danger/20 rounded-lg p-4 flex items-start gap-3">
@@ -295,7 +339,7 @@ export default function AdminDisciplinePage() {
                     <div>
                       <h5 className="text-sm font-bold text-status-danger-text">Suspension Action</h5>
                       <p className="text-xs text-status-danger-text/80 mt-1 leading-relaxed">
-                        Issuing a suspension will automatically activate the <strong>Suspension Chain</strong>. The student will be blocked from the attendance system and their portal access will be restricted.
+                        Issuing a suspension will automatically activate the <strong>Suspension Chain</strong>. The student will be blocked from the attendance system and their portal access will be restricted for the specified duration.
                       </p>
                     </div>
                   </div>
@@ -305,36 +349,36 @@ export default function AdminDisciplinePage() {
 
             {/* Footer Actions */}
             {selectedReport.status === "PENDING" && (
-              <div className="p-6 border-t border-border bg-background flex items-center justify-between">
+              <div className="p-6 border-t border-border bg-background flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <button
                   onClick={() => {
                     reviewMutation.mutate({ id: selectedReport.id, action: "DISMISSED", note: adminNote || "Dismissed by admin." });
                   }}
                   disabled={isProcessing}
-                  className="px-5 py-2.5 text-text-secondary font-medium hover:bg-border/50 rounded-lg transition-colors border border-border disabled:opacity-50 flex items-center gap-2"
+                  className="w-full sm:w-auto px-5 py-2.5 text-text-secondary font-medium hover:bg-border/50 rounded-lg transition-colors border border-border disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {reviewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
                   Dismiss
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       if (!adminNote) return;
                       reviewMutation.mutate({ id: selectedReport.id, action: "RESOLVED_WARNING", note: adminNote });
                     }}
                     disabled={!adminNote || isProcessing}
-                    className="flex items-center gap-2 bg-surface border border-border hover:bg-background text-text-primary px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-surface border border-border hover:bg-background text-text-primary px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
                   >
                     {reviewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
                     Issue Warning
                   </button>
                   <button
                     onClick={() => {
-                      if (!adminNote) return;
-                      suspendMutation.mutate({ id: selectedReport.id, note: adminNote });
+                      if (!adminNote || durationDays < 1) return;
+                      suspendMutation.mutate({ id: selectedReport.id, note: adminNote, durationDays });
                     }}
-                    disabled={!adminNote || isProcessing}
-                    className="flex items-center gap-2 bg-status-danger hover:bg-status-danger/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
+                    disabled={!adminNote || durationDays < 1 || isProcessing}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-status-danger hover:bg-status-danger/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
                   >
                     {suspendMutation.isPending ? (
                       <>
@@ -349,6 +393,34 @@ export default function AdminDisciplinePage() {
                     )}
                   </button>
                 </div>
+              </div>
+            )}
+            
+            {/* Footer Actions for Suspended Reports (Lifting Suspension) */}
+            {selectedReport.status === "SUSPENDED" && (
+              <div className="p-6 border-t border-border bg-background flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <p className="text-sm text-text-secondary">This student is currently suspended.</p>
+                <button
+                  onClick={() => {
+                    if (confirm("Are you sure you want to lift this suspension early? Attendance and portal access will be restored immediately.")) {
+                      liftMutation.mutate(selectedReport.id);
+                    }
+                  }}
+                  disabled={liftMutation.isPending}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 bg-status-success hover:bg-status-success/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
+                >
+                  {liftMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Lift Suspension
+                      <Unlock className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>

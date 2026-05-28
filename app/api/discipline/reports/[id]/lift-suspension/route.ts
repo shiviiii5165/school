@@ -15,11 +15,6 @@ export async function PATCH(
     }
 
     const { id } = params;
-    const { adminNote, durationDays } = await req.json();
-
-    if (!durationDays || typeof durationDays !== 'number' || durationDays <= 0) {
-      return NextResponse.json({ error: "Invalid duration provided" }, { status: 400 });
-    }
 
     const report = await prisma.disciplineReport.findUnique({
       where: { id },
@@ -29,44 +24,31 @@ export async function PATCH(
       },
     });
 
-    if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 });
+    if (!report || report.status !== "SUSPENDED") {
+      return NextResponse.json({ error: "Report not found or not suspended" }, { status: 404 });
     }
-
-    const fromDate = new Date();
-    const untilDate = new Date();
-    untilDate.setDate(untilDate.getDate() + durationDays);
 
     const [updatedReport, updatedStudent] = await prisma.$transaction([
       prisma.disciplineReport.update({
         where: { id },
         data: {
-          status: "SUSPENDED",
-          adminNote,
-          reviewedBy: session.user.id,
-          reviewedAt: new Date(),
-          actionTaken: "SUSPENDED",
-          actionType: "SUSPENSION",
-          suspendedFrom: fromDate,
-          suspendedUntil: untilDate,
+          status: "REVIEWED", // Changing back to reviewed
+          resolvedAt: new Date(),
         },
       }),
       prisma.student.update({
         where: { id: report.studentId },
         data: {
-          isSuspended: true,
-          suspendedReason: report.category,
-          suspendedAt: new Date(),
-          suspendedFrom: fromDate,
-          suspendedUntil: untilDate,
+          isSuspended: false,
+          suspendedReason: null,
+          suspendedAt: null,
+          suspendedFrom: null,
+          suspendedUntil: null,
         },
       }),
     ]);
 
-    const formatDate = (date: Date) => date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    
-    // Detailed Notification Message
-    const details = `\nReason: ${adminNote}\nDuration: ${durationDays} day(s)\nPeriod: ${formatDate(fromDate)} to ${formatDate(untilDate)}\nStatus: ACTIVE`;
+    const details = `\nReason: Suspension lifted manually by Administration\nStatus: RESOLVED`;
 
     // Create notifications for Student, Parent, and Teacher
     const notifications = [];
@@ -74,8 +56,8 @@ export async function PATCH(
     // Teacher notification
     notifications.push({
       userId: report.teacher.userId,
-      title: "Action Taken: Student Suspended",
-      message: `Student ${report.student.user.name} has been suspended based on your report (${report.category}).${details}`,
+      title: "Action Taken: Suspension Lifted",
+      message: `The suspension for student ${report.student.user.name} has been manually lifted early by the administration.${details}`,
       type: "DISCIPLINE" as "DISCIPLINE",
       link: "/teacher/discipline"
     });
@@ -83,8 +65,8 @@ export async function PATCH(
     // Student notification
     notifications.push({
       userId: report.student.userId,
-      title: "🚫 Account Suspended",
-      message: `You have been suspended. Your attendance and portal access are blocked.${details}`,
+      title: "✅ Suspension Lifted",
+      message: `Your suspension has been lifted early by the administration. Your attendance and portal access have been fully restored.${details}`,
       type: "DISCIPLINE" as "DISCIPLINE",
       link: "/student"
     });
@@ -93,8 +75,8 @@ export async function PATCH(
     if (report.student.parent?.userId) {
       notifications.push({
         userId: report.student.parent.userId,
-        title: "🚫 Your Child Has Been Suspended",
-        message: `Your child ${report.student.user.name} has been suspended. Please contact the administration.${details}`,
+        title: "✅ Your Child's Suspension Lifted",
+        message: `Your child ${report.student.user.name}'s suspension has been lifted early by the administration.${details}`,
         type: "DISCIPLINE" as "DISCIPLINE",
         link: "/parent"
       });
@@ -106,7 +88,7 @@ export async function PATCH(
 
     return NextResponse.json({ success: true, report: updatedReport, student: updatedStudent });
   } catch (error) {
-    console.error("Error suspending student:", error);
+    console.error("Error lifting suspension:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
