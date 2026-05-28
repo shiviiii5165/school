@@ -2,5 +2,5 @@
   "crons": [
     { "path": "/api/cron/lift-suspensions", "schedule": "0 0 * * *" }
   ],
-  "buildCommand": "prisma generate && prisma db push --accept-data-loss && node prisma/seed.js && next build"
+  "buildCommand": "prisma generate && prisma db push --accept-data-loss && next build"
 }
