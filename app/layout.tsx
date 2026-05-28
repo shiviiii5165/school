@@ -27,6 +27,8 @@ export const metadata: Metadata = {
 
 import { QueryProvider } from "@/components/providers/QueryProvider";
 
+import { Toaster } from "react-hot-toast";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -38,6 +40,7 @@ export default function RootLayout({
         <QueryProvider>
           {children}
         </QueryProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );
