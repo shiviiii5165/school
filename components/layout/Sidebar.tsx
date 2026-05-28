@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Users, UserCog, GraduationCap, 
   CreditCard, ShieldAlert, FileText, ClipboardList,
+  Settings, LogOut, ChevronLeft, ChevronRight, BookOpen,
   CalendarDays, Mail, FileCheck2, ShieldCheck, HelpCircle,
   Trophy
 } from "lucide-react";
