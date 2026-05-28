@@ -36,12 +36,7 @@ export default function TeacherTimetablePage() {
     }
   });
 
-  // Automatically trigger seed if timetable is completely empty (for demo purposes)
-  useEffect(() => {
-    if (data?.periods && data.periods.length === 0 && !seedMutation.isPending && !seedMutation.isSuccess) {
-      seedMutation.mutate();
-    }
-  }, [data?.periods, seedMutation]);
+  // Manual seed only - automatic seed removed to prevent infinite loops on error
 
   if (isLoading) {
     return (

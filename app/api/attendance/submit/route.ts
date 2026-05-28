@@ -87,44 +87,54 @@ export async function POST(req: NextRequest) {
     });
 
     // Update Attendance Summary for each student asynchronously
-    // This could be moved to a background job in production
+    // Recalculate summary from scratch to prevent inflation on edits
     for (const record of records) {
-      const summary = await prisma.attendanceSummary.findUnique({
-        where: { studentId: record.studentId }
+      const allStudentAttendance = await prisma.attendance.groupBy({
+        by: ['status'],
+        where: { studentId: record.studentId },
+        _count: true,
       });
 
-      if (summary) {
-        await prisma.attendanceSummary.update({
-          where: { studentId: record.studentId },
-          data: {
-            totalClasses: { increment: 1 },
-            presentCount: record.status === 'PRESENT' ? { increment: 1 } : undefined,
-            absentCount: record.status === 'ABSENT' ? { increment: 1 } : undefined,
-            lateCount: record.status === 'LATE' ? { increment: 1 } : undefined,
-            attendancePercentage: ((summary.presentCount + (record.status === 'PRESENT' ? 1 : 0)) / (summary.totalClasses + 1)) * 100
-          }
-        });
-      } else {
-        await prisma.attendanceSummary.create({
-          data: {
-            studentId: record.studentId,
-            totalClasses: 1,
-            presentCount: record.status === 'PRESENT' ? 1 : 0,
-            absentCount: record.status === 'ABSENT' ? 1 : 0,
-            lateCount: record.status === 'LATE' ? 1 : 0,
-            attendancePercentage: record.status === 'PRESENT' ? 100 : 0
-          }
-        });
-      }
+      let presentCount = 0;
+      let absentCount = 0;
+      let lateCount = 0;
+      let totalClasses = 0;
+
+      allStudentAttendance.forEach((group) => {
+        const count = group._count;
+        totalClasses += count;
+        if (group.status === 'PRESENT') presentCount += count;
+        if (group.status === 'ABSENT') absentCount += count;
+        if (group.status === 'LATE') lateCount += count;
+      });
+
+      const attendancePercentage = totalClasses > 0 ? (presentCount / totalClasses) * 100 : 0;
+
+      await prisma.attendanceSummary.upsert({
+        where: { studentId: record.studentId },
+        update: {
+          totalClasses,
+          presentCount,
+          absentCount,
+          lateCount,
+          attendancePercentage,
+          lastUpdated: new Date()
+        },
+        create: {
+          studentId: record.studentId,
+          totalClasses,
+          presentCount,
+          absentCount,
+          lateCount,
+          attendancePercentage,
+        }
+      });
 
       // Sync the attendance percentage back to Student model for quick access in UI
-      const updatedSummary = await prisma.attendanceSummary.findUnique({ where: { studentId: record.studentId }});
-      if (updatedSummary) {
-        await prisma.student.update({
-          where: { id: record.studentId },
-          data: { attendancePercentage: updatedSummary.attendancePercentage }
-        });
-      }
+      await prisma.student.update({
+        where: { id: record.studentId },
+        data: { attendancePercentage }
+      });
     }
     // Create or update DailyAttendanceLog
     let present = 0;
