@@ -7,6 +7,7 @@ export const authConfig = {
   session: {
     strategy: "jwt",
   },
+  secret: process.env.AUTH_SECRET || "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6",
   trustHost: true,
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
