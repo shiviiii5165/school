@@ -2,8 +2,10 @@ const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
 const { Server } = require("socket.io");
+const { loadEnvConfig } = require("@next/env");
 
 const dev = process.env.NODE_ENV !== "production";
+loadEnvConfig(process.cwd(), dev);
 const hostname = "localhost";
 const port = process.env.PORT || 3000;
 
