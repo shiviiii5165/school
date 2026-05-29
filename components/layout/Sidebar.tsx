@@ -32,7 +32,6 @@ const getNavItems = (role: string) => {
         { label: "Attendance", href: "/teacher/attendance", icon: FileCheck2 },
         { label: "Assignments", href: "/teacher/assignments", icon: BookOpen },
         { label: "Exams", href: "/teacher/exams", icon: Trophy },
-        { label: "Results", href: "/teacher/results", icon: FileText },
         { label: "Discipline", href: "/teacher/discipline", icon: ShieldAlert },
         { label: "Timetable", href: "/teacher/timetable", icon: CalendarDays },
       ];

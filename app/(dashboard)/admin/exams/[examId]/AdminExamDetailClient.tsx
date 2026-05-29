@@ -462,7 +462,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                     accessorKey: "attendancePercentage",
                     cell: (s) => (
                       <span className={`font-medium ${s.attendanceLow ? "text-red-600" : "text-green-600"}`}>
-                        {s.attendancePercentage.toFixed(1)}%
+                        {(s.attendancePercentage || 0).toFixed(1)}%
                       </span>
                     )
                   },
