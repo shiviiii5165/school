@@ -122,39 +122,47 @@ export async function POST(req: NextRequest) {
 
     }); // End of transaction
 
-    // 3. For EVERY student in that class, recalculate AttendanceSummary outside transaction to avoid timeouts
+    // 3. Optimized Bulk Recalculation (O(1) queries instead of O(N))
+    const classLogs = await prisma.dailyAttendanceLog.findMany({
+      where: { classId },
+      select: { date: true }
+    });
+
+    const groupedAttendance = await prisma.attendance.groupBy({
+      by: ['studentId', 'status'],
+      where: { classId, studentId: { in: studentIds } },
+      _count: true
+    });
+
+    const attendanceMap = new Map();
+    for (const g of groupedAttendance) {
+      if (!attendanceMap.has(g.studentId)) attendanceMap.set(g.studentId, { PRESENT: 0, ABSENT: 0, LATE: 0, BLOCKED: 0 });
+      attendanceMap.get(g.studentId)[g.status] = g._count;
+    }
+
     await Promise.all(allStudents.map(async (student) => {
-      // totalClassesHeld = count of distinct days teacher has submitted attendance for that class since student joined
-      const totalClassesHeld = await prisma.dailyAttendanceLog.count({
-        where: {
-          classId: classId,
-          date: { gte: student.admissionDate } // Only count classes AFTER their join date
-        }
-      });
+      // Calculate total classes held in memory
+      const totalClassesHeld = classLogs.filter(log => log.date >= student.admissionDate).length;
 
-      // Get count of PRESENT and LATE from actual Attendance table
-      const presentCount = await prisma.attendance.count({
-        where: { studentId: student.id, classId: classId, status: 'PRESENT' }
-      });
-      const lateCount = await prisma.attendance.count({
-        where: { studentId: student.id, classId: classId, status: 'LATE' }
-      });
-
+      const studentStats = attendanceMap.get(student.id) || { PRESENT: 0, ABSENT: 0, LATE: 0, BLOCKED: 0 };
+      const presentCount = studentStats.PRESENT;
+      const lateCount = studentStats.LATE;
+      
       // Calculate missing absent
       const absentCount = totalClassesHeld - presentCount - lateCount;
       
-      // Calculate Percentage (LATE counts as PRESENT for percentage calculation)
+      // Calculate Percentage
       const attendancePercentage = totalClassesHeld > 0 
         ? ((presentCount + lateCount) / totalClassesHeld) * 100 
-        : 100; // Database expects Float with default 100, UI will handle totalClassesHeld === 0 case
+        : 100;
 
-      // 4. UPDATE student.attendancePercentage
+      // UPDATE student table
       await prisma.student.update({
         where: { id: student.id },
         data: { attendancePercentage }
       });
 
-      // 5. UPDATE AttendanceSummary table
+      // UPDATE AttendanceSummary table
       await prisma.attendanceSummary.upsert({
         where: { studentId: student.id },
         update: {
