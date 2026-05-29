@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Receipt, ArrowLeft, Loader2 } from 'lucide-react';
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export default function PaymentHistoryPage() {
   const [payments, setPayments] = useState<any[]>([]);
@@ -23,58 +23,179 @@ export default function PaymentHistoryPage() {
   }, []);
 
   const generateReceipt = (payment: any) => {
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(79, 70, 229); // Indigo 600
-    doc.text("EduCore School", 105, 20, { align: "center" });
-    
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text("OFFICIAL FEE RECEIPT", 105, 28, { align: "center" });
-    
-    // Receipt Info
-    doc.setFontSize(12);
-    doc.setTextColor(40, 40, 40);
-    doc.text(`Receipt No: ${payment.receiptNumber}`, 20, 45);
-    doc.text(`Date: ${new Date(payment.paymentDate).toLocaleDateString()}`, 140, 45);
-    
-    // Student Info
-    doc.text(`Student: ${payment.student.user.name}`, 20, 55);
-    doc.text(`Class: ${payment.student.class.name} - ${payment.student.class.section} | Roll: ${payment.student.rollNo}`, 20, 62);
-    doc.text(`Parent: ${parentName}`, 20, 69);
-    
-    // Table
-    (doc as any).autoTable({
-      startY: 80,
-      head: [['Description', 'Amount']],
-      body: [
-        [
-          payment.feeRecord ? `${payment.feeRecord.feeType} Fee` : (payment.note || 'Advance / Custom Payment'),
-          `Rs. ${payment.amount.toLocaleString()}`
-        ]
-      ],
-      theme: 'grid',
-      headStyles: { fillColor: [79, 70, 229] },
-      margin: { top: 10 }
-    });
-    
-    // Payment Details
-    const finalY = (doc as any).lastAutoTable.finalY || 100;
-    
-    doc.text(`Payment Mode: ${payment.paymentMode}`, 20, finalY + 15);
-    doc.text(`Transaction ID: ${payment.transactionId || 'N/A'}`, 20, finalY + 22);
-    doc.setTextColor(34, 197, 94); // Green 500
-    doc.text(`Status: SUCCESS`, 20, finalY + 29);
-    
-    // Footer
-    doc.setTextColor(150, 150, 150);
-    doc.setFontSize(9);
-    doc.text("This is a computer-generated receipt and does not require a signature.", 105, 280, { align: "center" });
-    doc.text("EduCore School | 123 Education Lane | +91 9876543210 | support@educore.edu", 105, 285, { align: "center" });
-    
-    doc.save(`${payment.receiptNumber}.pdf`);
+    try {
+      const doc = new jsPDF('p', 'pt', 'a4');
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+
+      // --- Background & Border ---
+      doc.setFillColor(249, 250, 251); // Light slate-50 background
+      doc.rect(0, 0, pageWidth, pageHeight, 'F');
+      
+      doc.setDrawColor(79, 70, 229); // Indigo border
+      doc.setLineWidth(2);
+      doc.rect(20, 20, pageWidth - 40, pageHeight - 40);
+
+      // --- Header Area ---
+      // Logo Placeholder
+      doc.setFillColor(79, 70, 229);
+      doc.circle(60, 60, 20, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("E", 52, 67);
+
+      // School Name
+      doc.setTextColor(31, 41, 55); // Gray-800
+      doc.setFontSize(26);
+      doc.text("EDUCORE SCHOOL", 95, 55);
+      
+      // Tagline & Address
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128); // Gray-500
+      doc.text("Excellence in Education | ISO 9001:2015 Certified", 95, 70);
+      doc.text("123 Education Lane, Knowledge Park, New Delhi - 110001", 95, 82);
+
+      // Separator Line
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(1);
+      doc.line(40, 100, pageWidth - 40, 100);
+
+      // --- Receipt Title ---
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(79, 70, 229);
+      doc.text("OFFICIAL FEE RECEIPT", pageWidth / 2, 125, { align: 'center' });
+
+      // --- Metadata Box (Receipt No & Date) ---
+      doc.setFillColor(243, 244, 246);
+      doc.roundedRect(40, 140, 220, 40, 5, 5, 'F');
+      doc.roundedRect(pageWidth - 260, 140, 220, 40, 5, 5, 'F');
+      
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.text("Receipt Number:", 50, 155);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(17, 24, 39);
+      doc.text(`${payment.receiptNumber || 'N/A'}`, 50, 170);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(75, 85, 99);
+      doc.text("Payment Date:", pageWidth - 250, 155);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(17, 24, 39);
+      doc.text(`${new Date(payment.paymentDate).toLocaleDateString('en-US', { day: '2-digit', month: 'long', year: 'numeric' })}`, pageWidth - 250, 170);
+
+      // --- Student Info ---
+      doc.setFontSize(12);
+      doc.setTextColor(79, 70, 229);
+      doc.text("Student Details", 40, 215);
+      doc.setDrawColor(79, 70, 229);
+      doc.line(40, 220, 125, 220);
+
+      doc.setFontSize(11);
+      doc.setTextColor(55, 65, 81);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Student Name:`, 40, 240);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${payment.student?.user?.name || 'N/A'}`, 130, 240);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Class & Sec:`, 40, 260);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${payment.student?.class?.name || 'N/A'} - ${payment.student?.class?.section || 'N/A'}`, 130, 260);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Roll Number:`, 300, 260);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${payment.student?.rollNo || 'N/A'}`, 390, 260);
+
+      doc.setFont("helvetica", "normal");
+      doc.text(`Parent Name:`, 40, 280);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${parentName || 'N/A'}`, 130, 280);
+
+      // --- Table ---
+      const feeDesc = payment.feeRecord ? `${payment.feeRecord.feeType} Fee` : (payment.note || 'Advance / Custom Payment');
+      const amountStr = `Rs. ${payment.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+
+      autoTable(doc, {
+        startY: 310,
+        head: [['S.No.', 'Fee Description', 'Amount Paid']],
+        body: [
+          ['1', feeDesc, amountStr]
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold', halign: 'center' },
+        bodyStyles: { textColor: [55, 65, 81], fontSize: 11 },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 50 },
+          1: { halign: 'left' },
+          2: { halign: 'right', fontStyle: 'bold', cellWidth: 120 }
+        },
+        margin: { left: 40, right: 40 }
+      });
+
+      // --- Payment Summary & Status ---
+      const finalY = (doc as any).lastAutoTable.finalY || 400;
+
+      // Total Box
+      doc.setFillColor(238, 242, 255); // Indigo-50
+      doc.rect(pageWidth - 200, finalY + 10, 160, 30, 'F');
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(79, 70, 229);
+      doc.text("Total Paid:", pageWidth - 190, finalY + 30);
+      doc.text(amountStr, pageWidth - 50, finalY + 30, { align: 'right' });
+
+      // Payment Metadata
+      doc.setFontSize(10);
+      doc.setTextColor(107, 114, 128);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Payment Mode:`, 40, finalY + 25);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(31, 41, 55);
+      doc.text(`${payment.paymentMode || 'N/A'}`, 120, finalY + 25);
+
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(107, 114, 128);
+      doc.text(`Transaction ID:`, 40, finalY + 45);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(31, 41, 55);
+      doc.text(`${payment.transactionId || 'N/A'}`, 120, finalY + 45);
+
+      // Status Stamp
+      doc.setDrawColor(34, 197, 94); // Green border
+      doc.setTextColor(34, 197, 94);
+      doc.setLineWidth(2);
+      doc.roundedRect(40, finalY + 65, 120, 30, 5, 5);
+      doc.setFontSize(14);
+      doc.text("SUCCESS \u2713", 100, finalY + 85, { align: 'center' });
+
+      // --- Signatures ---
+      doc.setDrawColor(156, 163, 175);
+      doc.setLineWidth(1);
+      doc.line(pageWidth - 180, finalY + 130, pageWidth - 40, finalY + 130);
+      doc.setFontSize(10);
+      doc.setTextColor(75, 85, 99);
+      doc.setFont("helvetica", "normal");
+      doc.text("Authorized Signatory", pageWidth - 110, finalY + 145, { align: 'center' });
+
+      // --- Footer ---
+      doc.setFillColor(79, 70, 229);
+      doc.rect(20, pageHeight - 60, pageWidth - 40, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.text("This is a computer-generated receipt and does not require a physical signature.", pageWidth / 2, pageHeight - 45, { align: 'center' });
+      doc.text("For any discrepancies, contact: support@educore.edu | +91 9876543210", pageWidth / 2, pageHeight - 32, { align: 'center' });
+
+      doc.save(`EduCore_Receipt_${payment.receiptNumber}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please check the console.");
+    }
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
