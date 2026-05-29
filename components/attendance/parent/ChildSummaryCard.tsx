@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 interface ChildSummaryCardProps {
   name: string;
   className: string;
@@ -25,9 +27,9 @@ export default function ChildSummaryCard({ name, className, rollNo, regId, avata
   return (
     <div className="bg-surface border border-border rounded-xl p-6 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-border flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="w-16 h-16 rounded-full bg-border flex items-center justify-center overflow-hidden flex-shrink-0 relative">
           {avatar ? (
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
+            <Image src={avatar} alt={name} fill sizes="64px" className="object-cover" />
           ) : (
             <span className="text-xl font-bold text-text-secondary">{name.substring(0, 2).toUpperCase()}</span>
           )}

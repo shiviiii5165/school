@@ -1,6 +1,7 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, Menu } from "lucide-react";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import NotificationBell from "./NotificationBell";
 
@@ -49,9 +50,9 @@ export default function Topbar({ user }: { user: { name: string; role: string; a
                 {user.role}
               </span>
             </div>
-            <div className="w-9 h-9 rounded-full bg-border flex items-center justify-center overflow-hidden border-2 border-surface shadow-sm">
+            <div className="w-9 h-9 rounded-full bg-border flex items-center justify-center overflow-hidden border-2 border-surface shadow-sm relative">
               {user.avatar ? (
-                <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                <Image src={user.avatar} alt="Avatar" fill sizes="36px" className="object-cover" />
               ) : (
                 <span className="font-bold text-text-secondary">{user.name.charAt(0)}</span>
               )}

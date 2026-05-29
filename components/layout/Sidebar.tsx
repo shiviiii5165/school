@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
@@ -91,9 +92,9 @@ export default function Sidebar({ user }: { user: { name: string; role: string; 
       {/* User Profile */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
-          <div className="w-10 h-10 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden relative">
             {user.avatar ? (
-              <img src={user.avatar} alt="Avatar" className="w-full h-full object-cover" />
+              <Image src={user.avatar} alt="Avatar" fill sizes="40px" className="object-cover" />
             ) : (
               <span className="font-semibold text-text-secondary">{user.name.charAt(0)}</span>
             )}
@@ -156,6 +157,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string; 
 
         <button
           onClick={() => setCollapsed(!collapsed)}
+          aria-label="Toggle Sidebar"
           className="flex items-center justify-center h-10 w-full rounded-lg hover:bg-background text-text-muted transition-colors"
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}

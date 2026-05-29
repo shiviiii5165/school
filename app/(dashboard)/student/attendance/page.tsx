@@ -2,15 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import AttendanceOverviewCards from "@/components/attendance/student/AttendanceOverviewCards";
 import ProgressRing from "@/components/attendance/student/ProgressRing";
-import AttendancePieChart from "@/components/attendance/student/AttendancePieChart";
 import AttendanceCalendar from "@/components/attendance/student/AttendanceCalendar";
-import TrendLineChart from "@/components/attendance/student/TrendLineChart";
 import AttendanceHistoryTable from "@/components/attendance/student/AttendanceHistoryTable";
 import LowAttendanceWarning from "@/components/attendance/student/LowAttendanceWarning";
 import DetentionBanner from "@/components/attendance/student/DetentionBanner";
 import { Loader2 } from "lucide-react";
+
+const AttendancePieChart = dynamic(
+  () => import("@/components/attendance/student/AttendancePieChart"),
+  { ssr: false, loading: () => <div className="h-64 bg-surface animate-pulse rounded-xl" /> }
+);
+const TrendLineChart = dynamic(
+  () => import("@/components/attendance/student/TrendLineChart"),
+  { ssr: false, loading: () => <div className="h-64 bg-surface animate-pulse rounded-xl" /> }
+);
 import { useRealtimeAttendance } from "@/hooks/useRealtimeAttendance";
 
 export default function StudentAttendancePage() {

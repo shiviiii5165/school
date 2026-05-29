@@ -20,9 +20,39 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
+import { Viewport } from "next";
+
+export const viewport: Viewport = {
+  themeColor: "#4f46e5",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
-  title: "School Management System",
-  description: "Empowering Education Through Technology",
+  title: {
+    template: "%s | EduCore System",
+    default: "EduCore School Management System",
+  },
+  description: "Next-generation cloud ERP empowering education through seamless administration, analytics, and intelligent automation.",
+  keywords: ["School ERP", "Education Management", "EduCore", "School Software", "Attendance Tracking"],
+  authors: [{ name: "AntiGravity" }],
+  openGraph: {
+    title: "EduCore School Management System",
+    description: "Empowering Education Through Technology. The ultimate digital ERP for modern schools.",
+    url: "https://school.shiviiii.com", // Replace with actual URL
+    siteName: "EduCore",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "EduCore System",
+    description: "Next-generation cloud ERP for schools.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 import { QueryProvider } from "@/components/providers/QueryProvider";

@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { useAttendanceStore } from "@/hooks/useAttendanceStore";
 import { Lock } from "lucide-react";
 
@@ -29,9 +30,9 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
       <div className="grid grid-cols-[120px_1fr_180px] md:grid-cols-[180px_1fr_240px] items-center px-4 md:px-6 py-2.5 min-h-[48px] border-b border-border bg-[#FEF2F2] hover:bg-[#FEE2E2] transition-colors relative">
         <div className="text-xs font-mono text-text-muted">{regId}</div>
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden grayscale opacity-80">
+          <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden grayscale opacity-80 relative">
             {avatar ? (
-              <img src={avatar} alt={name} className="w-full h-full object-cover" />
+              <Image src={avatar} alt={name} fill sizes="32px" className="object-cover" />
             ) : (
               <span className="text-xs font-semibold text-text-secondary">{name.substring(0, 2).toUpperCase()}</span>
             )}
@@ -67,9 +68,9 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
     <div className={`grid grid-cols-[120px_1fr_180px] md:grid-cols-[180px_1fr_240px] items-center px-4 md:px-6 py-2.5 min-h-[48px] border-b ${rowBorder} ${rowBg} transition-colors group`}>
       <div className="text-xs font-mono text-text-muted">{regId}</div>
       <div className="flex items-center gap-3 pr-4">
-        <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden relative">
           {avatar ? (
-            <img src={avatar} alt={name} className="w-full h-full object-cover" />
+            <Image src={avatar} alt={name} fill sizes="32px" className="object-cover" />
           ) : (
             <span className="text-xs font-semibold text-text-secondary">{name.substring(0, 2).toUpperCase()}</span>
           )}

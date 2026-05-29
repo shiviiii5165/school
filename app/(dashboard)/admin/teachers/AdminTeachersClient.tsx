@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import DataTable from "@/components/shared/DataTable";
 import { UserCog, Plus, Filter } from "lucide-react";
 
@@ -14,13 +15,15 @@ export default function AdminTeachersClient({ data }: AdminTeachersClientProps) 
       accessorKey: "name",
       cell: (item: any) => (
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center overflow-hidden flex-shrink-0">
-            {item.avatar ? (
-              <img src={item.avatar} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="font-medium text-text-secondary text-xs">{item.name.substring(0, 2).toUpperCase()}</span>
-            )}
-          </div>
+        <div className="w-8 h-8 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+          {item.avatar ? (
+            <Image src={item.avatar} alt="Avatar" fill sizes="32px" className="object-cover" />
+          ) : (
+            <span className="font-medium text-text-secondary text-xs">
+              {item.name.substring(0, 2).toUpperCase()}
+            </span>
+          )}
+        </div>
           <div className="font-medium text-text-primary">{item.name}</div>
         </div>
       ),

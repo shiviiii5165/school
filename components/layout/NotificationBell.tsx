@@ -77,9 +77,12 @@ export default function NotificationBell({ role }: { role: string }) {
 
   return (
     <div className="relative">
-      <button onClick={() => { setOpen(!open); if (!open) markAllRead() }}
-        className="relative p-2 text-text-secondary hover:bg-background rounded-full transition-colors">
-        <Bell className="w-5 h-5"/>
+      <button 
+        aria-label="Notifications"
+        onClick={() => { setOpen(!open); if (!open) markAllRead() }}
+        className="relative p-2.5 text-text-secondary hover:bg-surface-hover rounded-xl transition-all hover:text-text-primary"
+      >
+        <Bell className="w-[18px] h-[18px]" />
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 min-w-[16px] h-4 rounded-full bg-status-danger text-white text-[10px] font-bold flex items-center justify-center px-0.5 border-2 border-surface">
             {unreadCount > 9 ? '9+' : unreadCount}

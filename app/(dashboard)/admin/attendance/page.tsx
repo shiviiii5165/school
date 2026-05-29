@@ -1,14 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import SchoolAttendanceMetrics from "@/components/attendance/admin/SchoolAttendanceMetrics";
 import ClassWiseTable from "@/components/attendance/admin/ClassWiseTable";
 import AttendanceRiskList from "@/components/attendance/admin/AttendanceRiskList";
 import DetentionPanel from "@/components/attendance/admin/DetentionPanel";
-import AttendanceCharts from "@/components/attendance/admin/AttendanceCharts";
 import { Loader2 } from "lucide-react";
 import { useRealtimeAttendance } from "@/hooks/useRealtimeAttendance";
+
+const AttendanceCharts = dynamic(
+  () => import("@/components/attendance/admin/AttendanceCharts"),
+  { ssr: false, loading: () => <div className="h-64 flex items-center justify-center bg-surface animate-pulse rounded-xl" /> }
+);
 
 export default function AdminAttendanceAnalyticsPage() {
   const { data: session } = useSession();
