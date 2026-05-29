@@ -19,9 +19,15 @@ export async function GET(req: NextRequest) {
     if (role === 'PARENT') {
       const parent = await prisma.parent.findUnique({ where: { userId: session.user.id } });
       if (!parent) return NextResponse.json({ error: "Parent profile not found" }, { status: 404 });
-      students = await prisma.student.findMany({ where: { parentId: parent.id } });
+      students = await prisma.student.findMany({ 
+        where: { parentId: parent.id },
+        include: { user: { select: { name: true } } }
+      });
     } else if (role === 'STUDENT') {
-      const student = await prisma.student.findUnique({ where: { userId: session.user.id } });
+      const student = await prisma.student.findUnique({ 
+        where: { userId: session.user.id },
+        include: { user: { select: { name: true } } }
+      });
       if (!student) return NextResponse.json({ error: "Student profile not found" }, { status: 404 });
       students = [student];
     } else {

@@ -112,7 +112,7 @@ export default function AntiGravityFeesDashboard() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 p-[2px]">
                 <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center overflow-hidden">
                   <div className="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold text-xl">
-                    {student.user.name.charAt(0)}
+                    {student?.user?.name?.charAt(0) || 'S'}
                   </div>
                 </div>
               </div>
@@ -123,9 +123,9 @@ export default function AntiGravityFeesDashboard() {
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
-                  {student.user.name}
+                  {student?.user?.name || 'Student'}
                 </span>
-                {student.hasTransport && (
+                {student?.hasTransport && (
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
                     Transport Enrolled
                   </span>
@@ -143,7 +143,7 @@ export default function AntiGravityFeesDashboard() {
                     onClick={() => setSelectedStudentId(s.id)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedStudentId === s.id ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
                   >
-                    {s.user.name.split(' ')[0]}
+                    {s.user?.name?.split(' ')[0] || 'Unknown'}
                   </button>
                 ))}
               </div>
