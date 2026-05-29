@@ -21,6 +21,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
   const [timetableSaving, setTimetableSaving] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
 
   // Eligibility State
   const [eligibilityData, setEligibilityData] = useState<any[]>([]);
@@ -41,6 +42,9 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
     fetchExam();
     fetch("/api/subjects").then(res => res.json()).then(data => {
       if (data.subjects) setSubjects(data.subjects);
+    });
+    fetch("/api/classes").then(res => res.json()).then(data => {
+      if (data.classes) setClasses(data.classes);
     });
   }, [examId]);
 
@@ -356,7 +360,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                         {exam.status === "DRAFT" ? (
                           <select value={slot.classId} onChange={e => updateTimetableRow(index, 'classId', e.target.value)} className="w-full p-2 border border-border rounded outline-none focus:border-primary">
                             <option value="">Select...</option>
-                            {/* In a real app we'd load classes assigned to the exam here. Assuming all subjects list has classes. */}
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name} {c.section}</option>)}
                           </select>
                         ) : (
                           <span className="font-medium">{slot.class?.name} {slot.class?.section}</span>
