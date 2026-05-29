@@ -107,7 +107,7 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
     }
 
     await prisma.$transaction(async (tx) => {
-      for (const entry of entries) {
+      await Promise.all(entries.map(async (entry: any) => {
         const grade = entry.isAbsent ? "AB" : calculateGrade(entry.marks, slot.maxMarks);
         await tx.examResult.upsert({
           where: { slotId_studentId: { slotId: params.slotId, studentId: entry.studentId } },
@@ -129,13 +129,16 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
             enteredBy: teacher.id,
           },
         });
-      }
+      }));
 
       // Lock the slot (final submission)
       await tx.examSlot.update({
         where: { id: params.slotId },
         data: { isLocked: true },
       });
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
     });
 
     return NextResponse.json({ success: true, locked: true });

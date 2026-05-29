@@ -80,6 +80,9 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
           });
         }
       }
+    }, {
+      maxWait: 15000,
+      timeout: 30000,
     });
 
     return NextResponse.json({ success: true, classesProcessed: classIds.length, studentsProcessed: students.length });
