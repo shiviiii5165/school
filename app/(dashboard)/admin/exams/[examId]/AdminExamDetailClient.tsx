@@ -40,6 +40,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
   // Results State
   const [resultsLoading, setResultsLoading] = useState(false);
   const [publishingResults, setPublishingResults] = useState(false);
+  const [examResults, setExamResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchExam();
@@ -229,6 +230,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
       if (!res.ok) throw new Error("Failed to calculate results");
       toast.success("Results calculated successfully!");
       fetchExam();
+      fetchResults();
     } catch (err) {
       toast.error("Calculation failed");
     } finally {
@@ -251,10 +253,26 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
     }
   };
 
+  const fetchResults = async () => {
+    setResultsLoading(true);
+    try {
+      const res = await fetch(`/api/exams/${examId}/results`);
+      const data = await res.json();
+      if (data.results) {
+        setExamResults(data.results);
+      }
+    } catch (err) {
+      toast.error("Failed to load results");
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
   // Tab switching effect
   useEffect(() => {
     if (activeTab === "ELIGIBILITY") fetchEligibility();
     if (activeTab === "MARKS") fetchMarksStatus();
+    if (activeTab === "RESULTS") fetchResults();
   }, [activeTab]);
 
 
@@ -610,19 +628,63 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
               </div>
             </div>
 
-            {exam.status === "COMPLETED" ? (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center flex flex-col items-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+            {exam.status === "COMPLETED" && (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-6 flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-xl font-bold text-green-800 mb-2">Results Published Successfully!</h3>
-                <p className="text-green-700 max-w-md">The examination process is fully completed. All students and parents have been notified, and results are available on their dashboards.</p>
+                <div>
+                  <h3 className="text-lg font-bold text-green-800">Results Published Successfully!</h3>
+                  <p className="text-green-700 text-sm">The examination process is fully completed. All students and parents have been notified, and results are available on their dashboards.</p>
+                </div>
               </div>
-            ) : (
+            )}
+
+            {!examResults.length && exam.status !== "COMPLETED" && (
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center">
                 <p className="text-slate-600">Review the marks status. Once all marks are submitted, calculate the grades and publish.</p>
-                {exam._count?.summaries > 0 && (
-                  <p className="text-sm font-bold text-primary mt-4">✅ Grades have been calculated. Ready to publish.</p>
+              </div>
+            )}
+
+            {(examResults.length > 0 || resultsLoading) && (
+              <div>
+                <h4 className="font-bold text-text-primary mb-4 text-sm uppercase tracking-wider">Student Final Results</h4>
+                {resultsLoading ? (
+                  <div className="py-8 text-center"><Loader2 className="w-8 h-8 animate-spin mx-auto text-primary" /></div>
+                ) : (
+                  <DataTable
+                    data={examResults}
+                    columns={[
+                      { header: "Roll No", accessorKey: "rollNo" },
+                      { header: "Name", accessorKey: "name" },
+                      { header: "Class", accessorKey: "className" },
+                      { 
+                        header: "Total Marks", 
+                        accessorKey: "totalMarks",
+                        cell: (s) => <span className="font-medium">{s.totalMarks} / {s.maxMarks}</span>
+                      },
+                      { 
+                        header: "Percentage", 
+                        accessorKey: "percentage",
+                        cell: (s) => <span className="font-medium">{s.percentage?.toFixed(1)}%</span>
+                      },
+                      { 
+                        header: "Grade", 
+                        accessorKey: "grade",
+                        cell: (s) => <span className="font-bold px-2 py-1 bg-slate-100 rounded">{s.grade}</span>
+                      },
+                      { 
+                        header: "Rank", 
+                        accessorKey: "rank",
+                        cell: (s) => <span className="text-primary font-bold">#{s.rank}</span>
+                      },
+                      { 
+                        header: "Status", 
+                        accessorKey: "isPassed",
+                        cell: (s) => s.isPassed ? <span className="text-green-600 font-bold px-2 py-1 bg-green-100 rounded">PASS</span> : <span className="text-red-600 font-bold px-2 py-1 bg-red-100 rounded">FAIL</span>
+                      },
+                    ]}
+                  />
                 )}
               </div>
             )}
