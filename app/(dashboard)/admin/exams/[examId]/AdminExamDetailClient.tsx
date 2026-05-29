@@ -264,7 +264,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
   const tabs = [
     { id: "TIMETABLE", label: "Timetable Builder", icon: CalendarDays },
     { id: "ELIGIBILITY", label: "Eligibility & Admit Cards", icon: ShieldCheck, disabled: exam.status === "DRAFT" },
-    { id: "MARKS", label: "Marks Entry Status", icon: Edit, disabled: exam.status === "DRAFT" || exam.status === "SCHEDULED" },
+    { id: "MARKS", label: "Marks Entry Status", icon: Edit, disabled: exam.status === "DRAFT" },
     { id: "RESULTS", label: "Results & Publishing", icon: BarChart, disabled: exam.status !== "COMPLETED" && exam.status !== "MARKS_ENTRY" },
   ];
 
