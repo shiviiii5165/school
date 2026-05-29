@@ -593,7 +593,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                     className="px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 disabled:opacity-50"
                     title={!allComplete ? "All marks must be submitted first" : ""}
                   >
-                    {calculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart3 className="w-4 h-4" />}
+                    {calculating ? <Loader2 className="w-4 h-4 animate-spin" /> : <BarChart className="w-4 h-4" />}
                     Calculate Ranks & Grades
                   </button>
                 )}
