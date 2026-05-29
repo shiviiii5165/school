@@ -34,6 +34,7 @@ export async function GET(req: NextRequest, { params }: { params: { examId: stri
       exam.slots.map(async (slot) => {
         const studentCount = await prisma.student.count({ where: { classId: slot.classId } });
         return {
+          id: slot.id,
           slotId: slot.id,
           className: `${slot.class.name} - ${slot.class.section}`,
           subjectName: slot.subject.name,

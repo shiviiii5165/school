@@ -40,6 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { examId: stri
       const hallTicket = s.hallTickets[0];
       const attendanceLow = s.attendancePercentage < threshold;
       return {
+        id: s.id,
         studentId: s.id,
         name: s.user.name,
         regId: s.user.regId,
