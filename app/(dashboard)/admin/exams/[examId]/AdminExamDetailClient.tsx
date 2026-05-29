@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, CalendarDays, ShieldCheck, 
-  FileEdit, BarChart3, Save, Send, Upload, CheckCircle2, Lock, Unlock, Loader2, Plus 
+  Edit, BarChart, Save, Send, Upload, CheckCircle, Lock, Unlock, Loader2, Plus 
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
@@ -264,8 +264,8 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
   const tabs = [
     { id: "TIMETABLE", label: "Timetable Builder", icon: CalendarDays },
     { id: "ELIGIBILITY", label: "Eligibility & Admit Cards", icon: ShieldCheck, disabled: exam.status === "DRAFT" },
-    { id: "MARKS", label: "Marks Entry Status", icon: FileEdit, disabled: exam.status === "DRAFT" || exam.status === "SCHEDULED" },
-    { id: "RESULTS", label: "Results & Publishing", icon: BarChart3, disabled: exam.status === "DRAFT" || exam.status === "SCHEDULED" || exam.status === "ONGOING" },
+    { id: "MARKS", label: "Marks Entry Status", icon: Edit, disabled: exam.status === "DRAFT" || exam.status === "SCHEDULED" },
+    { id: "RESULTS", label: "Results & Publishing", icon: BarChart, disabled: exam.status !== "COMPLETED" && exam.status !== "MARKS_ENTRY" },
   ];
 
   return (
@@ -344,7 +344,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                       className="px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 min-w-[140px] justify-center"
                     >
                       {timetableSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
-                       saveSuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Save className="w-4 h-4" />}
+                       saveSuccess ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Save className="w-4 h-4" />}
                       {saveSuccess ? <span className="text-green-600">Saved</span> : "Save Draft"}
                     </button>
                     <button 
@@ -613,7 +613,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
             {exam.status === "COMPLETED" ? (
               <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center flex flex-col items-center">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-green-600" />
+                  <CheckCircle className="w-8 h-8 text-green-600" />
                 </div>
                 <h3 className="text-xl font-bold text-green-800 mb-2">Results Published Successfully!</h3>
                 <p className="text-green-700 max-w-md">The examination process is fully completed. All students and parents have been notified, and results are available on their dashboards.</p>
