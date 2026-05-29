@@ -28,16 +28,20 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
       where: { classId: { in: classIds } },
     });
 
+    // Bulk fetch all results for this exam once
+    const allResults = await prisma.examResult.findMany({
+      where: { examId: params.examId },
+      include: { slot: true },
+    });
+
     await prisma.$transaction(async (tx) => {
       for (const classId of classIds) {
         const classStudents = students.filter(s => s.classId === classId);
         const summaries: { studentId: string; pct: number }[] = [];
 
-        for (const student of classStudents) {
-          const results = await tx.examResult.findMany({
-            where: { examId: params.examId, studentId: student.id },
-            include: { slot: true },
-          });
+        // 1. Calculate summaries concurrently
+        await Promise.all(classStudents.map(async (student) => {
+          const results = allResults.filter(r => r.studentId === student.id);
 
           const computed = computeExamSummary(
             results.map(r => ({
@@ -69,16 +73,16 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
               isPassed: computed.isPassed,
             },
           });
-        }
+        }));
 
-        // Assign ranks within class (sorted by percentage descending)
+        // 2. Assign ranks concurrently
         summaries.sort((a, b) => b.pct - a.pct);
-        for (let i = 0; i < summaries.length; i++) {
-          await tx.examSummary.update({
-            where: { examId_studentId: { examId: params.examId, studentId: summaries[i].studentId } },
-            data: { rank: i + 1 },
-          });
-        }
+        await Promise.all(summaries.map((summary, index) => 
+          tx.examSummary.update({
+            where: { examId_studentId: { examId: params.examId, studentId: summary.studentId } },
+            data: { rank: index + 1 },
+          })
+        ));
       }
     }, {
       maxWait: 15000,
