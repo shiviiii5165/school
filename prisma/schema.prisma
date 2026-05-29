@@ -34,6 +34,9 @@ model User {
   parent        Parent?
   teacher       Teacher?
   notifications Notification[]
+  
+  installmentPlansCreated InstallmentPlan[]
+  paymentsReceived        Payment[]
 }
 
 model Student {
@@ -65,6 +68,8 @@ model Student {
   detainedAt           DateTime?
   detainedReason       String?
   detainedBy           String? // adminId
+  hasTransport         Boolean   @default(false)
+  transportZone        String?
 
   disciplineReports DisciplineReport[]
   attendanceRecords Attendance[]
@@ -72,6 +77,10 @@ model Student {
   examResults       ExamResult[]
   examSummaries     ExamSummary[]
   hallTickets       HallTicket[]
+  feeRecords        FeeRecord[]
+  payments          Payment[]
+  installmentPlans  InstallmentPlan[]
+  creditWallet      CreditWallet?
 }
 
 model Parent {
@@ -224,9 +233,90 @@ model FeeRecord {
   feeType     String // "Tuition", "Transport", "Library"
   dueDate     DateTime
   paidDate    DateTime?
-  status      String    @default("PENDING") // PENDING, PAID, OVERDUE
+  status      String    @default("PENDING") // PENDING, PAID, OVERDUE, PARTIAL
   receiptNo   String?
   paymentMode String?
+
+  paidAmount         Float     @default(0)
+  hasInstallmentPlan Boolean   @default(false)
+  installmentPlanId  String?
+  lastPaymentAt      DateTime?
+
+  student            Student           @relation(fields: [studentId], references: [id])
+  payments           Payment[]
+  installmentPlans   InstallmentPlan[]
+}
+
+model InstallmentPlan {
+  id               String   @id @default(cuid())
+  feeRecordId      String
+  studentId        String
+  createdByAdminId String
+  totalMonths      Int
+  status           String   @default("ACTIVE") // ACTIVE, COMPLETED, DEFAULTED, CANCELLED
+  createdAt        DateTime @default(now())
+
+  feeRecord        FeeRecord             @relation(fields: [feeRecordId], references: [id])
+  student          Student               @relation(fields: [studentId], references: [id])
+  createdBy        User                  @relation(fields: [createdByAdminId], references: [id])
+  schedules        InstallmentSchedule[]
+}
+
+model InstallmentSchedule {
+  id                String    @id @default(cuid())
+  planId            String
+  installmentNumber Int
+  amount            Float
+  dueDate           DateTime
+  status            String    @default("PENDING") // PENDING, PAID, OVERDUE
+  paidAt            DateTime?
+  paymentId         String?
+
+  plan              InstallmentPlan @relation(fields: [planId], references: [id])
+  payments          Payment[]       @relation("SchedulePayments")
+}
+
+model Payment {
+  id                    String   @id @default(cuid())
+  studentId             String
+  feeRecordId           String?
+  installmentScheduleId String?
+  amount                Float
+  paymentMode           String // UPI, CARD, NET_BANKING, WALLET, CASH, CHEQUE, ADVANCE_WALLET
+  transactionId         String?
+  paymentDate           DateTime @default(now())
+  receivedByAdminId     String?
+  receiptNumber         String   @unique
+  note                  String?
+  status                String   @default("SUCCESS") // SUCCESS, PENDING, FAILED, REFUNDED
+  createdAt             DateTime @default(now())
+
+  student               Student              @relation(fields: [studentId], references: [id])
+  feeRecord             FeeRecord?           @relation(fields: [feeRecordId], references: [id])
+  installmentSchedule   InstallmentSchedule? @relation("SchedulePayments", fields: [installmentScheduleId], references: [id])
+  receivedBy            User?                @relation(fields: [receivedByAdminId], references: [id])
+}
+
+model CreditWallet {
+  id            String   @id @default(cuid())
+  studentId     String   @unique
+  balance       Float    @default(0)
+  lastUpdatedAt DateTime @default(now())
+
+  student       Student                   @relation(fields: [studentId], references: [id])
+  transactions  CreditWalletTransaction[]
+}
+
+model CreditWalletTransaction {
+  id                 String   @id @default(cuid())
+  walletId           String
+  type               String // CREDIT, DEBIT
+  amount             Float
+  reason             String
+  relatedFeeRecordId String?
+  createdAt          DateTime @default(now())
+
+  wallet             CreditWallet @relation(fields: [walletId], references: [id])
 }
 
 model DisciplineReport {

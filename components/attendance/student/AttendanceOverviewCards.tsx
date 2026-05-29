@@ -29,7 +29,11 @@ export default function AttendanceOverviewCards({ total, present, absent, percen
       <OverviewCard label="Total Days" value={total} />
       <OverviewCard label="Present" value={present} color="#16A34A" />
       <OverviewCard label="Absent" value={absent} color="#DC2626" />
-      <OverviewCard label="Rate" value={`${percentage.toFixed(1)}%`} color={percentage >= 75 ? "#16A34A" : "#DC2626"} />
+      <OverviewCard 
+        label="Rate" 
+        value={total === 0 ? "No Data" : `${percentage.toFixed(1)}%`} 
+        color={total === 0 ? "#94A3B8" : percentage >= 75 ? "#16A34A" : "#DC2626"} 
+      />
     </div>
   );
 }

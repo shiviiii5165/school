@@ -11,9 +11,11 @@ interface StudentCardProps {
   isSuspended?: boolean;
   suspensionReason?: string;
   suspendedUntil?: Date | null | string;
+  attendancePercentage?: number;
+  totalClassesHeld?: number;
 }
 
-const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, suspensionReason, suspendedUntil }: StudentCardProps) => {
+const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, suspensionReason, suspendedUntil, attendancePercentage, totalClassesHeld }: StudentCardProps) => {
   const status = useAttendanceStore((state) => state.attendanceMap[id]);
   const setStatus = useAttendanceStore((state) => state.setStatus);
 
@@ -72,7 +74,15 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
             <span className="text-xs font-semibold text-text-secondary">{name.substring(0, 2).toUpperCase()}</span>
           )}
         </div>
-        <span className="text-sm font-medium text-text-primary truncate">{name}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-text-primary truncate">{name}</span>
+          <span className={`text-[10px] font-bold ${
+            totalClassesHeld === 0 ? 'text-slate-400' : 
+            (attendancePercentage ?? 0) < 75 ? 'text-red-500' : 'text-emerald-500'
+          }`}>
+            {totalClassesHeld === 0 ? 'No Data' : `${(attendancePercentage ?? 100).toFixed(1)}%`}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-center justify-center md:justify-start gap-4 md:gap-6">

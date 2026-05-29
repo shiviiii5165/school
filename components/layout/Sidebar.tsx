@@ -18,6 +18,7 @@ const getNavItems = (role: string) => {
     case "ADMIN":
       return [
         { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+        { label: "Attendance", href: "/admin/attendance", icon: FileCheck2 },
         { label: "Students", href: "/admin/students", icon: Users },
         { label: "Teachers", href: "/admin/teachers", icon: UserCog },
         { label: "Fees", href: "/admin/fees", icon: CreditCard },

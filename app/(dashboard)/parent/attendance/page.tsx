@@ -139,7 +139,7 @@ export default function ParentAttendancePage() {
             percentage={percentage}
           />
           <div className="bg-surface border border-border rounded-xl p-8 flex justify-center shadow-card">
-            <ProgressRing percentage={percentage} />
+            <ProgressRing percentage={percentage} total={selectedChild.summary.totalClasses} />
           </div>
           <AttendancePieChart
             present={selectedChild.summary.presentCount}

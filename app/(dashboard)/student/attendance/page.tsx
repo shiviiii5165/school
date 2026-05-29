@@ -97,7 +97,7 @@ export default function StudentAttendancePage() {
           />
           
           <div className="bg-surface border border-border rounded-xl p-8 flex justify-center shadow-card">
-            <ProgressRing percentage={percentage} />
+            <ProgressRing percentage={percentage} total={summary.totalClasses} />
           </div>
 
           <AttendancePieChart

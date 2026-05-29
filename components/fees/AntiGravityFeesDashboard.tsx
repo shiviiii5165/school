@@ -1,52 +1,104 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Bell, CheckCircle2, AlertCircle, Calendar, CreditCard, 
   DownloadCloud, HelpCircle, FileText, Smartphone, Wallet,
-  Building, CheckCircle, ChevronRight, PieChart as PieChartIcon
+  Building, CheckCircle, ChevronRight, PieChart as PieChartIcon, Loader2, Clock
 } from 'lucide-react';
 import { 
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip 
 } from 'recharts';
+import PaymentModal from './PaymentModal';
 
 export default function AntiGravityFeesDashboard() {
-  const [role, setRole] = useState<'parent' | 'student'>('parent');
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [paymentInvoice, setPaymentInvoice] = useState<any>(null);
 
-  // Dummy Data
-  const feesBreakdown = [
-    { name: 'Tuition Fee', value: 45000, color: '#6366F1' }, // Indigo
-    { name: 'Transport', value: 12000, color: '#8B5CF6' },   // Purple
-    { name: 'Library', value: 3000, color: '#EC4899' },      // Pink
-    { name: 'Exam Fee', value: 2500, color: '#3B82F6' },     // Blue
-    { name: 'Other', value: 1500, color: '#14B8A6' },        // Teal
-  ];
+  const fetchData = async () => {
+    try {
+      const res = await fetch('/api/fees/dashboard');
+      const json = await res.json();
+      if (json.success) {
+        setData(json);
+        if (json.students && json.students.length > 0 && !selectedStudentId) {
+          setSelectedStudentId(json.students[0].id);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFF]"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
+  }
+
+  if (!data || !data.students || data.students.length === 0) {
+    return <div className="min-h-screen flex items-center justify-center bg-[#F8FAFF]">No data available.</div>;
+  }
+
+  // Filter records based on selected student (if multiple children)
+  // For 'Total Outstanding', we aggregate across ALL children if parent view, but let's just do it based on selected student for simplicity, 
+  // Wait, the prompt says "Total Outstanding = SUM of all unpaid+overdue invoices for their children".
+  const allFeeRecords = data.feeRecords;
+  const totalOutstandingAllChildren = allFeeRecords.reduce((sum: number, r: any) => sum + r.outstandingAmount, 0);
   
-  const totalFees = feesBreakdown.reduce((acc, item) => acc + item.value, 0);
+  const studentRecords = allFeeRecords.filter((r: any) => r.studentId === selectedStudentId);
+  const student = data.students.find((s: any) => s.id === selectedStudentId);
+  
+  // Outstanding & Paid Stats
+  const totalInvoiced = studentRecords.reduce((sum: number, r: any) => sum + r.amount + r.lateFine, 0);
+  const totalPaid = studentRecords.reduce((sum: number, r: any) => sum + r.paidAmount, 0);
+  const totalOutstanding = studentRecords.reduce((sum: number, r: any) => sum + r.outstandingAmount, 0);
+  
+  const paidPercentage = totalInvoiced > 0 ? Math.round((totalPaid / totalInvoiced) * 100) : 100;
 
-  const upcomingInvoices = [
-    { id: 'INV-092', name: 'Tuition Fee - Term 2', student: 'Aarav Kumar', dueDate: '15 Jun 2026', amount: 15000, status: 'Due Soon' },
-    { id: 'INV-093', name: 'Transport Fee - Q2', student: 'Aarav Kumar', dueDate: '30 Jun 2026', amount: 4000, status: 'Upcoming' },
-    { id: 'INV-094', name: 'Library Penalty', student: 'Diya Kumar', dueDate: '10 May 2026', amount: 300, status: 'Overdue' },
-  ];
+  // Breakdown for Donut Chart (based on ALL invoices for this student)
+  const breakdownMap: any = {};
+  studentRecords.forEach((r: any) => {
+    if (!breakdownMap[r.feeType]) breakdownMap[r.feeType] = 0;
+    breakdownMap[r.feeType] += r.amount;
+  });
 
-  const recentTransactions = [
-    { id: 'TXN-8812', date: '05 Apr 2026', desc: 'Tuition Fee - Term 1', amount: 15000, mode: 'UPI', status: 'Paid' },
-    { id: 'TXN-8805', date: '02 Apr 2026', desc: 'Transport Fee - Q1', amount: 4000, mode: 'Net Banking', status: 'Paid' },
-    { id: 'TXN-8742', date: '15 Jan 2026', desc: 'Admission Fee', amount: 25000, mode: 'Credit Card', status: 'Paid' },
-  ];
+  const colors = ['#6366F1', '#8B5CF6', '#EC4899', '#3B82F6', '#14B8A6', '#F59E0B'];
+  const feesBreakdown = Object.keys(breakdownMap).map((key, index) => ({
+    name: key,
+    value: breakdownMap[key],
+    color: colors[index % colors.length]
+  }));
 
-  const installments = [
-    { term: 'Term 1', date: '01 Apr', amount: 15000, status: 'paid' },
-    { term: 'Term 2', date: '15 Jun', amount: 15000, status: 'current' },
-    { term: 'Term 3', date: '15 Sep', amount: 15000, status: 'future' },
-  ];
+  const pendingDues = studentRecords.filter((r: any) => r.dynamicStatus !== 'PAID');
+  
+  const overdueCount = allFeeRecords.filter((r: any) => r.dynamicStatus === 'OVERDUE').length;
+  const dueSoonCount = allFeeRecords.filter((r: any) => r.dynamicStatus === 'DUE SOON').length;
+
+  // Timeline building (Group by due date month or just show the invoices)
+  // For this, let's just show top 4 upcoming/past invoices
+  const timeline = studentRecords.slice().sort((a: any, b: any) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()).slice(0, 4);
 
   const glassCard = "bg-white/60 backdrop-blur-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-3xl p-6 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#E9EFFA] via-[#F8FAFF] to-[#E9EFFA] p-4 sm:p-8 font-sans text-slate-800 relative overflow-hidden">
       
+      {paymentInvoice && (
+        <PaymentModal 
+          invoice={paymentInvoice} 
+          wallets={data.wallets}
+          onClose={() => setPaymentInvoice(null)} 
+          onSuccess={() => { setPaymentInvoice(null); fetchData(); }} 
+        />
+      )}
+
       {/* Floating Background Shapes */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-300/30 rounded-full blur-[100px] pointer-events-none"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[35%] h-[35%] bg-purple-300/30 rounded-full blur-[100px] pointer-events-none"></div>
@@ -59,62 +111,63 @@ export default function AntiGravityFeesDashboard() {
             <div className="relative">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 p-[2px]">
                 <div className="w-full h-full rounded-[14px] bg-white flex items-center justify-center overflow-hidden">
-                  <img src="https://i.pravatar.cc/150?img=11" alt="Avatar" className="w-full h-full object-cover" />
+                  <div className="w-full h-full bg-indigo-100 flex items-center justify-center text-indigo-500 font-bold text-xl">
+                    {student.user.name.charAt(0)}
+                  </div>
                 </div>
-              </div>
-              <div className="absolute -bottom-1 -right-1 bg-white p-1 rounded-full shadow-sm">
-                <span className="flex w-3 h-3 bg-green-500 rounded-full"></span>
               </div>
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-                {role === 'parent' ? 'Rajesh Kumar' : 'Aarav Kumar'}
+                Fees Overview
               </h1>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold uppercase tracking-wider">
-                  {role === 'parent' ? 'Parent Portal' : 'Student Portal'}
+                  {student.user.name}
                 </span>
+                {student.hasTransport && (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold uppercase tracking-wider">
+                    Transport Enrolled
+                  </span>
+                )}
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            {/* Role Toggle for Demo */}
-            <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/60">
-              <button 
-                onClick={() => setRole('parent')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${role === 'parent' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Parent
-              </button>
-              <button 
-                onClick={() => setRole('student')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${role === 'student' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Student
-              </button>
-            </div>
+            {data.students.length > 1 && (
+              <div className="flex bg-white/50 backdrop-blur-md p-1 rounded-xl border border-white/60">
+                {data.students.map((s: any) => (
+                  <button 
+                    key={s.id}
+                    onClick={() => setSelectedStudentId(s.id)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedStudentId === s.id ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    {s.user.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            )}
             <button className="relative p-3 bg-white/60 backdrop-blur-md border border-white/60 rounded-xl hover:bg-white transition-colors text-slate-600">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+              {overdueCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>}
             </button>
           </div>
         </header>
 
         {/* Smart Alert */}
-        <div className="bg-indigo-50/80 backdrop-blur-md border border-indigo-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-full">
-              <AlertCircle className="w-5 h-5" />
+        {overdueCount > 0 && (
+          <div className="bg-red-50/80 backdrop-blur-md border border-red-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 text-red-600 rounded-full">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <p className="text-sm font-medium text-red-900">
+                You have <strong className="font-bold">{overdueCount} overdue</strong> invoice(s). Late fines of 2% per month are being applied. Please clear them immediately.
+              </p>
             </div>
-            <p className="text-sm font-medium text-indigo-900">
-              Pay before <strong className="font-bold">15 June</strong> to avoid ₹300 late fee penalty on Term 2 Tuition.
-            </p>
           </div>
-          <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors hidden sm:block">
-            Enable Reminders
-          </button>
-        </div>
+        )}
 
         {/* Main Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -128,35 +181,38 @@ export default function AntiGravityFeesDashboard() {
               
               <div className="flex-1 space-y-4 relative z-10 w-full">
                 <div>
-                  <p className="text-slate-500 font-medium text-sm">Total Outstanding</p>
-                  <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mt-1 tracking-tight">₹21,600</h2>
+                  <p className="text-slate-500 font-medium text-sm">Family Total Outstanding</p>
+                  <h2 className="text-4xl sm:text-5xl font-extrabold text-slate-800 mt-1 tracking-tight">
+                    ₹{totalOutstandingAllChildren.toLocaleString()}
+                  </h2>
                 </div>
                 <div className="flex items-center gap-4 text-sm font-medium">
-                  <div className="flex items-center gap-1.5 text-red-500 bg-red-50 px-2.5 py-1 rounded-lg">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>1 Overdue</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
-                    <ClockIcon className="w-4 h-4" />
-                    <span>2 Pending</span>
-                  </div>
+                  {overdueCount > 0 && (
+                    <div className="flex items-center gap-1.5 text-red-500 bg-red-50 px-2.5 py-1 rounded-lg">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{overdueCount} Overdue</span>
+                    </div>
+                  )}
+                  {dueSoonCount > 0 && (
+                    <div className="flex items-center gap-1.5 text-amber-600 bg-amber-50 px-2.5 py-1 rounded-lg">
+                      <Clock className="w-4 h-4" />
+                      <span>{dueSoonCount} Due Soon</span>
+                    </div>
+                  )}
                 </div>
                 <div className="pt-4 flex gap-3">
-                  {role === 'parent' ? (
-                    <>
-                      <button className="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all hover:-translate-y-0.5">
-                        Pay Now
-                      </button>
-                      <button className="flex-1 sm:flex-none px-6 py-3 bg-white/50 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-white transition-all">
-                        View Invoices
-                      </button>
-                    </>
-                  ) : (
-                    <button className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all flex items-center gap-2">
-                      <HelpCircle className="w-4 h-4" />
-                      Ask Guardian to Pay
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => {
+                      if (pendingDues.length > 0) setPaymentInvoice(pendingDues[0]);
+                    }}
+                    disabled={pendingDues.length === 0}
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all hover:-translate-y-0.5 disabled:opacity-50"
+                  >
+                    Pay Next Due
+                  </button>
+                  <a href="/parent/fees/history" className="px-6 py-3 bg-white/50 border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-white transition-all flex items-center justify-center">
+                    Payment History
+                  </a>
                 </div>
               </div>
 
@@ -167,7 +223,8 @@ export default function AntiGravityFeesDashboard() {
                   <circle 
                     cx="50" cy="50" r="40" fill="none" 
                     stroke="url(#gradient)" strokeWidth="8" strokeLinecap="round"
-                    strokeDasharray="251.2" strokeDashoffset="103" // approx 59% (251.2 * 0.41)
+                    strokeDasharray="251.2" 
+                    strokeDashoffset={251.2 - (251.2 * (paidPercentage / 100))} 
                     className="transition-all duration-1000 ease-out"
                   />
                   <defs>
@@ -178,7 +235,7 @@ export default function AntiGravityFeesDashboard() {
                   </defs>
                 </svg>
                 <div className="absolute text-center flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-slate-800">59%</span>
+                  <span className="text-2xl font-bold text-slate-800">{paidPercentage}%</span>
                   <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Paid</span>
                 </div>
               </div>
@@ -188,123 +245,168 @@ export default function AntiGravityFeesDashboard() {
             <div className={glassCard}>
               <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-indigo-500" />
-                Payment Timeline (2026-27)
+                Payment Timeline ({student.user.name})
               </h3>
               
-              <div className="relative flex items-center justify-between max-w-2xl mx-auto px-4">
+              <div className="relative flex items-center justify-between max-w-2xl mx-auto px-4 overflow-x-auto pb-4">
                 {/* Connecting Line */}
                 <div className="absolute left-8 right-8 top-5 h-1 bg-slate-200 rounded-full z-0"></div>
-                <div className="absolute left-8 right-1/2 top-5 h-1 bg-indigo-500 rounded-full z-0"></div>
 
-                {installments.map((inst, i) => (
-                  <div key={i} className="relative z-10 flex flex-col items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-all ${
-                      inst.status === 'paid' ? 'bg-green-500 text-white' : 
-                      inst.status === 'current' ? 'bg-indigo-500 text-white ring-4 ring-indigo-100 shadow-indigo-500/40' : 
-                      'bg-slate-200 text-slate-400'
-                    }`}>
-                      {inst.status === 'paid' ? <CheckCircle className="w-5 h-5" /> : <span className="font-bold text-sm">{i+1}</span>}
+                {timeline.map((inv: any, i: number) => {
+                  const isPaid = inv.dynamicStatus === 'PAID';
+                  const isOverdue = inv.dynamicStatus === 'OVERDUE';
+                  const isPartial = inv.dynamicStatus === 'PARTIAL';
+                  
+                  return (
+                    <div key={i} className="relative z-10 flex flex-col items-center gap-3 min-w-[100px]">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center border-4 border-white shadow-sm transition-all ${
+                        isPaid ? 'bg-green-500 text-white' : 
+                        isOverdue ? 'bg-red-500 text-white ring-4 ring-red-100 shadow-red-500/40' : 
+                        isPartial ? 'bg-amber-500 text-white' :
+                        'bg-slate-200 text-slate-400'
+                      }`}>
+                        {isPaid ? <CheckCircle className="w-5 h-5" /> : 
+                         isOverdue ? <AlertCircle className="w-5 h-5" /> :
+                         <span className="font-bold text-sm">{i+1}</span>}
+                      </div>
+                      <div className="text-center">
+                        <p className={`font-bold text-sm ${isOverdue ? 'text-red-600' : isPaid ? 'text-green-600' : 'text-slate-700'}`}>{inv.feeType}</p>
+                        <p className="text-xs text-slate-500 font-medium">{new Date(inv.dueDate).toLocaleDateString()}</p>
+                        <p className="text-xs font-semibold mt-1 text-slate-800">
+                          {isPaid ? 'PAID' : `₹${inv.outstandingAmount.toLocaleString()}`}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <p className={`font-bold text-sm ${inst.status === 'current' ? 'text-indigo-600' : 'text-slate-700'}`}>{inst.term}</p>
-                      <p className="text-xs text-slate-500 font-medium">{inst.date}</p>
-                      <p className="text-xs font-semibold mt-1">₹{(inst.amount/1000)}k</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Invoices List */}
             <div className={`${glassCard} !p-0 overflow-hidden`}>
-              <div className="p-6 border-b border-white/40 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-slate-800">Pending Dues</h3>
-                <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">View All</button>
               </div>
-              <div className="divide-y divide-slate-100/50">
-                {(role === 'student' ? upcomingInvoices.filter(i => i.student === 'Aarav Kumar') : upcomingInvoices).map((inv, i) => (
-                  <div key={i} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/40 transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-2xl ${
-                        inv.status === 'Overdue' ? 'bg-red-100 text-red-600' : 
-                        inv.status === 'Due Soon' ? 'bg-amber-100 text-amber-600' : 
-                        'bg-indigo-100 text-indigo-600'
-                      }`}>
-                        <FileText className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800">{inv.name}</h4>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                          {role === 'parent' && <span>{inv.student}</span>}
-                          {role === 'parent' && <span className="w-1 h-1 bg-slate-300 rounded-full"></span>}
-                          <span className={inv.status === 'Overdue' ? 'text-red-500 font-medium' : ''}>Due: {inv.dueDate}</span>
+              <div className="divide-y divide-slate-100">
+                {pendingDues.length === 0 ? (
+                  <div className="p-8 text-center text-slate-500">No pending dues! All clear.</div>
+                ) : (
+                  pendingDues.map((inv: any, i: number) => (
+                    <div key={i} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                      <div className="flex items-start gap-4 w-full sm:w-auto">
+                        <div className={`p-3 rounded-2xl shrink-0 ${
+                          inv.dynamicStatus === 'OVERDUE' ? 'bg-red-100 text-red-600' : 
+                          inv.dynamicStatus === 'DUE SOON' ? 'bg-amber-100 text-amber-600' : 
+                          'bg-indigo-100 text-indigo-600'
+                        }`}>
+                          <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-bold text-slate-800">{inv.feeType} Fee</h4>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-slate-500 flex-wrap">
+                            <span className={inv.dynamicStatus === 'OVERDUE' ? 'text-red-500 font-medium' : ''}>
+                              Due: {new Date(inv.dueDate).toLocaleDateString()}
+                            </span>
+                            {inv.lateFine > 0 && (
+                              <span className="text-red-500 text-xs font-bold px-2 py-0.5 bg-red-50 rounded-full">
+                                +₹{inv.lateFine} Late Fine
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* Progress Bar for Partial Payments */}
+                          {inv.paidAmount > 0 && (
+                            <div className="mt-3">
+                              <div className="flex justify-between text-xs mb-1 font-medium text-slate-500">
+                                <span>Paid: ₹{inv.paidAmount.toLocaleString()}</span>
+                                <span>Total: ₹{(inv.amount + inv.lateFine).toLocaleString()}</span>
+                              </div>
+                              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                  className="bg-indigo-500 h-full rounded-full" 
+                                  style={{ width: `${(inv.paidAmount / (inv.amount + inv.lateFine)) * 100}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Installment Plan Banner */}
+                          {inv.hasInstallmentPlan && (
+                            <div className="mt-2 text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded inline-block">
+                              Active Installment Plan
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
-                      <div className="text-left sm:text-right">
-                        <p className="font-extrabold text-lg text-slate-800">₹{inv.amount.toLocaleString()}</p>
-                        <p className={`text-xs font-bold uppercase tracking-wider ${
-                           inv.status === 'Overdue' ? 'text-red-500' : 
-                           inv.status === 'Due Soon' ? 'text-amber-500' : 
-                           'text-indigo-500'
-                        }`}>{inv.status}</p>
-                      </div>
-                      {role === 'parent' && (
-                        <button className="p-2 sm:px-4 sm:py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 font-semibold rounded-xl transition-colors shrink-0">
-                          <span className="hidden sm:inline">Pay</span>
-                          <ChevronRight className="w-5 h-5 sm:hidden" />
+                      
+                      <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto border-t sm:border-0 pt-4 sm:pt-0">
+                        <div className="text-left sm:text-right">
+                          <p className="font-extrabold text-xl text-slate-800">₹{inv.outstandingAmount.toLocaleString()}</p>
+                          <p className={`text-xs font-bold uppercase tracking-wider ${
+                             inv.dynamicStatus === 'OVERDUE' ? 'text-red-500' : 
+                             inv.dynamicStatus === 'DUE SOON' ? 'text-amber-500' : 
+                             inv.dynamicStatus === 'PARTIAL' ? 'text-indigo-500' :
+                             'text-slate-500'
+                          }`}>
+                            {inv.dynamicStatus}
+                          </p>
+                        </div>
+                        <button 
+                          onClick={() => setPaymentInvoice(inv)}
+                          className="px-5 py-2.5 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
+                        >
+                          Pay
                         </button>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
-
+            
           </div>
 
           {/* Right Column */}
           <div className="space-y-8">
             
-            {/* Fee Breakdown Chart */}
+            {/* Fee Breakdown */}
             <div className={glassCard}>
-              <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
                 <PieChartIcon className="w-5 h-5 text-indigo-500" />
                 Fee Breakdown
               </h3>
-              <p className="text-sm text-slate-500 mb-6">Total mapped fee for academic year</p>
               
-              <div className="h-48 w-full relative">
+              <div className="h-[200px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={feesBreakdown}
-                      cx="50%" cy="50%" innerRadius={60} outerRadius={80}
-                      paddingAngle={5} dataKey="value" stroke="none"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
                     >
                       {feesBreakdown.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <RechartsTooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Amount']}
+                      formatter={(value: number) => `₹${value.toLocaleString()}`}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total</span>
-                  <span className="text-xl font-extrabold text-slate-800">₹{totalFees.toLocaleString()}</span>
-                </div>
               </div>
-              
-              <div className="mt-6 space-y-3">
+
+              <div className="mt-6 flex flex-col gap-3">
                 {feesBreakdown.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: item.color }}></div>
-                      <span className="font-medium text-slate-600">{item.name}</span>
+                      <span className="text-sm font-medium text-slate-700">{item.name}</span>
                     </div>
                     <span className="font-bold text-slate-800">₹{item.value.toLocaleString()}</span>
                   </div>
@@ -312,114 +414,28 @@ export default function AntiGravityFeesDashboard() {
               </div>
             </div>
 
-            {/* Payment Options */}
-            {role === 'parent' && (
-              <div className={glassCard}>
-                <h3 className="text-lg font-bold text-slate-800 mb-4">Quick Pay</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-indigo-600">
-                    <Smartphone className="w-6 h-6" />
-                    <span className="text-xs font-bold">UPI / QR</span>
-                  </button>
-                  <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-indigo-600">
-                    <CreditCard className="w-6 h-6" />
-                    <span className="text-xs font-bold">Card</span>
-                  </button>
-                  <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-indigo-600">
-                    <Building className="w-6 h-6" />
-                    <span className="text-xs font-bold">Net Banking</span>
-                  </button>
-                  <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-white/50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all text-slate-600 hover:text-indigo-600">
-                    <Wallet className="w-6 h-6" />
-                    <span className="text-xs font-bold">Wallets</span>
-                  </button>
+            {/* Quick Actions */}
+            <div className={`${glassCard} space-y-4`}>
+              <h3 className="text-lg font-bold text-slate-800 mb-4">Quick Links</h3>
+              <a href="/parent/fees/history" className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-indigo-50 rounded-xl transition-colors group">
+                <div className="flex items-center gap-3 text-slate-700 group-hover:text-indigo-700">
+                  <DownloadCloud className="w-5 h-5" />
+                  <span className="font-semibold text-sm">Download Receipts</span>
                 </div>
-              </div>
-            )}
-
-            {/* Quick Actions List */}
-            <div className={glassCard}>
-              <h3 className="text-lg font-bold text-slate-800 mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/60 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                      <DownloadCloud className="w-4 h-4" />
-                    </div>
-                    <span className="font-medium text-slate-700 text-sm">Download Tax Statement</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-500 transition-colors" />
-                </button>
-                <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/60 transition-colors group">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
-                      <HelpCircle className="w-4 h-4" />
-                    </div>
-                    <span className="font-medium text-slate-700 text-sm">Contact Support</span>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-purple-500 transition-colors" />
-                </button>
-              </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-indigo-500" />
+              </a>
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-purple-50 rounded-xl transition-colors group">
+                <div className="flex items-center gap-3 text-slate-700 group-hover:text-purple-700">
+                  <HelpCircle className="w-5 h-5" />
+                  <span className="font-semibold text-sm">Fee Policy & FAQs</span>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-purple-500" />
+              </button>
             </div>
 
           </div>
         </div>
-
-        {/* Recent Transactions Table */}
-        <div className={`${glassCard} overflow-hidden`}>
-          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-green-500" />
-            Recent Transactions
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-white/40">
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Date</th>
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Description</th>
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Mode</th>
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Amount</th>
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Status</th>
-                  <th className="pb-3 text-xs font-bold text-slate-400 uppercase tracking-wider text-center">Receipt</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/20">
-                {recentTransactions.map((txn, i) => (
-                  <tr key={i} className="hover:bg-white/30 transition-colors group">
-                    <td className="py-4 text-sm font-medium text-slate-600">{txn.date}</td>
-                    <td className="py-4 text-sm font-bold text-slate-800">{txn.desc}</td>
-                    <td className="py-4 text-sm font-medium text-slate-600">
-                      <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs">{txn.mode}</span>
-                    </td>
-                    <td className="py-4 text-sm font-extrabold text-slate-800 text-right">₹{txn.amount.toLocaleString()}</td>
-                    <td className="py-4 text-right">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold uppercase tracking-wider">
-                        <CheckCircle className="w-3 h-3" />
-                        {txn.status}
-                      </span>
-                    </td>
-                    <td className="py-4 text-center">
-                      <button className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors inline-flex">
-                        <DownloadCloud className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
       </div>
     </div>
-  );
-}
-
-// Quick Clock Icon Helper
-function ClockIcon(props: any) {
-  return (
-    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-    </svg>
   );
 }

@@ -22,6 +22,8 @@ interface StudentData {
   avatar?: string | null;
   isSuspended: boolean;
   suspensionReason?: string;
+  attendancePercentage: number;
+  totalClassesHeld: number;
 }
 
 export default function TeacherAttendancePage() {
@@ -30,6 +32,7 @@ export default function TeacherAttendancePage() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [classTotalClasses, setClassTotalClasses] = useState<number>(0);
 
   const { selectedClass, selectedDate, initAttendance, resetAttendance, attendanceMap } = useAttendanceStore();
 
@@ -73,6 +76,8 @@ export default function TeacherAttendancePage() {
             isSuspended: s.isSuspended || false,
             suspensionReason: s.suspendedReason || "",
             suspendedUntil: s.suspendedUntil || null,
+            attendancePercentage: s.attendancePercentage,
+            totalClassesHeld: s.attendanceSummary?.totalClasses || 0,
           }));
 
           // Sort by roll number ascending
@@ -84,6 +89,7 @@ export default function TeacherAttendancePage() {
           });
 
           setStudents(studentList);
+          setClassTotalClasses(data.totalClassesHeld || 0);
 
           // Build existing records map if attendance was already marked
           const existingRecords: Record<string, any> = {};
@@ -148,9 +154,25 @@ export default function TeacherAttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-display font-bold text-text-primary">Mark Attendance</h1>
-        <p className="text-sm text-text-secondary mt-1">Select a class and mark daily attendance</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-text-primary">Mark Attendance</h1>
+          <p className="text-sm text-text-secondary mt-1">Select a class and mark daily attendance</p>
+        </div>
+        {selectedClass && (
+          <div className="flex gap-3">
+            <div className="bg-primary/10 px-4 py-2 rounded-lg border border-primary/20">
+              <span className="text-sm font-semibold text-primary">
+                Classes Held: {classTotalClasses}
+              </span>
+            </div>
+            <div className="bg-emerald-50 px-4 py-2 rounded-lg border border-emerald-100">
+              <span className="text-sm font-semibold text-emerald-600">
+                Avg: {students.length > 0 ? (students.reduce((sum, s) => sum + s.attendancePercentage, 0) / students.length).toFixed(1) : 0}%
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <AttendanceToolbar classes={classes} />

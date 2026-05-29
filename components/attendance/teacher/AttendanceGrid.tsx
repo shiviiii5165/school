@@ -43,6 +43,8 @@ export default function AttendanceGrid({ students }: { students: Student[] }) {
             isSuspended={student.isSuspended}
             suspensionReason={student.suspensionReason}
             suspendedUntil={student.suspendedUntil}
+            attendancePercentage={student.attendancePercentage}
+            totalClassesHeld={student.totalClassesHeld}
           />
         ))}
       </div>

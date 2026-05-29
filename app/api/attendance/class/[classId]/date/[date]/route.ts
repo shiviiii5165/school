@@ -24,6 +24,7 @@ export async function GET(
         user: {
           select: { name: true, regId: true, avatar: true },
         },
+        attendanceSummary: true,
       },
       orderBy: { rollNo: "asc" },
     });
@@ -40,7 +41,11 @@ export async function GET(
       },
     });
 
-    return NextResponse.json({ students, existingAttendance });
+    const totalClassesHeld = await prisma.dailyAttendanceLog.count({
+      where: { classId }
+    });
+
+    return NextResponse.json({ students, existingAttendance, totalClassesHeld });
   } catch (error) {
     console.error("Error fetching class attendance:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
