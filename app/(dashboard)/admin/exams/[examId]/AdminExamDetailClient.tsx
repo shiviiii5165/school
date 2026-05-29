@@ -222,6 +222,18 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
     }
   };
 
+  const lockSlot = async (slotId: string) => {
+    if (!confirm("This will lock the slot and prevent further edits by the teacher. Continue?")) return;
+    try {
+      const res = await fetch(`/api/exams/${examId}/slots/${slotId}/lock`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to lock");
+      toast.success("Slot locked successfully!");
+      fetchMarksStatus();
+    } catch (err) {
+      toast.error("Failed to lock");
+    }
+  };
+
   const calculateResults = async () => {
     if (!confirm("This will compute final grades and ranks for all students. Continue?")) return;
     setCalculating(true);
@@ -578,16 +590,30 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                   {
                     header: "Action",
                     accessorKey: "id",
-                    cell: (s) => (
-                      s.isLocked && exam.status === "MARKS_ENTRY" ? (
-                        <button 
-                          onClick={() => unlockSlot(s.slotId)}
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
-                        >
-                          <Unlock className="w-3 h-3" /> Reopen
-                        </button>
-                      ) : null
-                    )
+                    cell: (s) => {
+                      if (exam.status !== "MARKS_ENTRY") return null;
+                      if (s.isLocked) {
+                        return (
+                          <button 
+                            onClick={() => unlockSlot(s.slotId)}
+                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                          >
+                            <Unlock className="w-3 h-3" /> Reopen
+                          </button>
+                        );
+                      }
+                      if (!s.isLocked && s.marksEntered === s.totalStudents && s.totalStudents > 0) {
+                        return (
+                          <button 
+                            onClick={() => lockSlot(s.slotId)}
+                            className="text-xs text-amber-600 hover:underline flex items-center gap-1 font-bold"
+                          >
+                            <Lock className="w-3 h-3" /> Force Lock
+                          </button>
+                        );
+                      }
+                      return null;
+                    }
                   }
                 ]}
               />
@@ -618,7 +644,7 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                 {exam.status === "MARKS_ENTRY" && (
                   <button 
                     onClick={publishResults}
-                    disabled={publishingResults || exam._count?.summaries === 0}
+                    disabled={publishingResults || !examResults || examResults.length === 0}
                     className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
                   >
                     {publishingResults ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
