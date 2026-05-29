@@ -22,6 +22,9 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
   const [publishLoading, setPublishLoading] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [classes, setClasses] = useState<any[]>([]);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [savedSlotsCount, setSavedSlotsCount] = useState(0);
 
   // Eligibility State
   const [eligibilityData, setEligibilityData] = useState<any[]>([]);
@@ -40,10 +43,10 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
 
   useEffect(() => {
     fetchExam();
-    fetch("/api/subjects").then(res => res.json()).then(data => {
+    fetch("/api/subjects", { cache: "no-store" }).then(res => res.json()).then(data => {
       if (data.subjects) setSubjects(data.subjects);
     });
-    fetch("/api/classes").then(res => res.json()).then(data => {
+    fetch("/api/classes", { cache: "no-store" }).then(res => res.json()).then(data => {
       if (data.classes) setClasses(data.classes);
     });
   }, [examId]);
@@ -57,7 +60,12 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
         // Init timetable form from slots if they exist
         if (data.exam.slots?.length > 0) {
           setTimetableForm(data.exam.slots);
+          setSavedSlotsCount(data.exam.slots.length);
+        } else {
+          setTimetableForm([]);
+          setSavedSlotsCount(0);
         }
+        setHasUnsavedChanges(false);
       }
     } catch (err) {
       console.error(err);
@@ -79,16 +87,19 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
       maxMarks: 100,
       passMarks: exam?.defaultPassPct || 33,
     }]);
+    setHasUnsavedChanges(true);
   };
 
   const updateTimetableRow = (index: number, field: string, value: any) => {
     const newForm = [...timetableForm];
     newForm[index] = { ...newForm[index], [field]: value };
     setTimetableForm(newForm);
+    setHasUnsavedChanges(true);
   };
 
   const removeTimetableRow = (index: number) => {
     setTimetableForm(timetableForm.filter((_, i) => i !== index));
+    setHasUnsavedChanges(true);
   };
 
   const saveTimetable = async () => {
@@ -110,6 +121,9 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
       });
       if (!res.ok) throw new Error((await res.json()).error);
       toast.success("Timetable saved successfully");
+      setSaveSuccess(true);
+      setHasUnsavedChanges(false);
+      setTimeout(() => setSaveSuccess(false), 2000);
       fetchExam();
     } catch (err: any) {
       toast.error(err.message);
@@ -303,6 +317,19 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
         {/* TIMETABLE TAB */}
         {activeTab === "TIMETABLE" && (
           <div className="space-y-6">
+            {exam.status === "DRAFT" && (
+              <div className="bg-blue-50 text-blue-800 p-3 rounded-lg border border-blue-200 text-sm font-medium flex items-center justify-center gap-2">
+                <span>Step 1: Save Draft</span>
+                <ArrowLeft className="w-4 h-4 rotate-180" />
+                <span>Step 2: Publish Timetable</span>
+              </div>
+            )}
+            {hasUnsavedChanges && (
+              <div className="bg-amber-50 text-amber-800 p-3 rounded-lg border border-amber-200 text-sm font-medium">
+                ⚠️ You have unsaved changes. Click Save Draft to save them.
+              </div>
+            )}
+            
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-bold text-text-primary">Timetable Builder</h3>
@@ -314,15 +341,17 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                     <button 
                       onClick={saveTimetable}
                       disabled={timetableSaving}
-                      className="px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 bg-surface border border-border text-text-primary font-medium rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2 min-w-[140px] justify-center"
                     >
-                      {timetableSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      Save Draft
+                      {timetableSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
+                       saveSuccess ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Save className="w-4 h-4" />}
+                      {saveSuccess ? <span className="text-green-600">Saved</span> : "Save Draft"}
                     </button>
                     <button 
                       onClick={publishTimetable}
-                      disabled={publishLoading || timetableForm.length === 0}
-                      className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+                      disabled={publishLoading || timetableForm.length === 0 || hasUnsavedChanges}
+                      title={hasUnsavedChanges ? "Save your slots first before publishing" : "Publish Timetable"}
+                      className="px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {publishLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       Publish Timetable
@@ -391,11 +420,22 @@ export default function AdminExamDetailClient({ examId }: { examId: string }) {
                   ))}
                 </tbody>
               </table>
-              {exam.status === "DRAFT" && (
-                <button onClick={addTimetableRow} className="mt-4 text-sm text-primary font-medium hover:underline flex items-center gap-1">
-                  <Plus className="w-4 h-4" /> Add Slot
-                </button>
-              )}
+              
+              <div className="mt-4 flex items-center justify-between">
+                {exam.status === "DRAFT" ? (
+                  <button onClick={addTimetableRow} className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+                    <Plus className="w-4 h-4" /> Add Slot
+                  </button>
+                ) : <div />}
+                
+                <div className="text-sm font-medium">
+                  <span className="text-green-600">{savedSlotsCount} slots saved to database</span>
+                  <span className="text-slate-300 mx-2">|</span>
+                  <span className={hasUnsavedChanges ? "text-amber-600" : "text-slate-500"}>
+                    {Math.max(0, timetableForm.length - savedSlotsCount)} unsaved row pending
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         )}
