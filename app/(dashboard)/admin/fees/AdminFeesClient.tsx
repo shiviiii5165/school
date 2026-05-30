@@ -172,7 +172,7 @@ export default function AdminFeesClient({ data, stats, defaulters }: AdminFeesCl
         <div className="bg-red-50 p-5 rounded-2xl border border-red-100 shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-xs text-red-600 font-bold uppercase tracking-wider">Defaulters (>30 Days)</p>
+              <p className="text-xs text-red-600 font-bold uppercase tracking-wider">Defaulters (&gt;30 Days)</p>
               <p className="text-2xl font-black text-red-700 mt-1">{stats.defaulterCount} Students</p>
             </div>
             <div className="p-2 bg-red-100 text-red-700 rounded-lg"><AlertTriangle className="w-5 h-5" /></div>

@@ -6,7 +6,12 @@ const globalForPrisma = globalThis as unknown as {
 
 // Config for Prisma
 const prismaConfig = {
-  log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+  log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL + '?connection_limit=10&pool_timeout=20'
+    }
+  }
 };
 
 export const prisma =
@@ -14,6 +19,16 @@ export const prisma =
   new PrismaClient(prismaConfig as any);
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+
+prisma.$use(async (params, next) => {
+  const start = Date.now();
+  const result = await next(params);
+  const duration = Date.now() - start;
+  if (duration > 2000) {
+    console.warn(`[SLOW QUERY]: ${params.model}.${params.action} took ${duration}ms`);
+  }
+  return result;
+});
 
 /**
  * Utility function to execute a database query with automatic retries for connection timeouts (like Neon cold starts).

@@ -67,7 +67,7 @@ export default function TeacherFeesClient({ data, defaultersCount, pendingCount 
           <p className="text-2xl font-black text-amber-800 mt-1">{pendingCount} Students</p>
         </div>
         <div className="bg-red-50 p-5 rounded-2xl border border-red-100 shadow-sm">
-          <p className="text-xs text-red-600 font-bold uppercase tracking-wider">Defaulters (>30 Days Overdue)</p>
+          <p className="text-xs text-red-600 font-bold uppercase tracking-wider">Defaulters (&gt;30 Days Overdue)</p>
           <p className="text-2xl font-black text-red-700 mt-1">{defaultersCount} Students</p>
         </div>
       </div>

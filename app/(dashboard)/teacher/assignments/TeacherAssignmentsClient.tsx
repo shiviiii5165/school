@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FileText, Plus, Calendar, Clock, Users, CheckCircle2,
   AlertCircle, MoreVertical, Eye, Edit, Trash2, X,
   BookOpen, Upload, Filter, ChevronDown
 } from "lucide-react";
+import { formatDate } from "@/lib/dateUtils";
 
 export interface Assignment {
   id: string;
@@ -32,10 +33,15 @@ interface TeacherAssignmentsClientProps {
 }
 
 export default function TeacherAssignmentsClient({ initialAssignments }: TeacherAssignmentsClientProps) {
+  const [mounted, setMounted] = useState(false);
   const [assignments] = useState<Assignment[]>(initialAssignments);
   const [showModal, setShowModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filtered = filterStatus === "ALL"
     ? assignments
@@ -46,6 +52,7 @@ export default function TeacherAssignmentsClient({ initialAssignments }: Teacher
   const draftCount = assignments.filter(a => a.status === "DRAFT").length;
 
   const getDaysRemaining = (dueDate: string) => {
+    if (!mounted) return 0;
     const diff = Math.ceil((new Date(dueDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return diff;
   };
@@ -152,14 +159,14 @@ export default function TeacherAssignmentsClient({ initialAssignments }: Teacher
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-text-secondary">
                       <span className="flex items-center gap-1.5" suppressHydrationWarning>
                         <Calendar className="w-3.5 h-3.5 text-text-muted" />
-                        Due: {new Date(assignment.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        Due: {mounted ? formatDate(assignment.dueDate) : ""}
                       </span>
                       {assignment.status === "ACTIVE" && (
                         <span className={`flex items-center gap-1.5 font-medium ${
                           days <= 0 ? "text-status-danger-text" : days <= 3 ? "text-status-warning-text" : "text-status-success-text"
-                        }`}>
+                        }`} suppressHydrationWarning>
                           <Clock className="w-3.5 h-3.5" />
-                          {days <= 0 ? "Overdue" : `${days} day${days !== 1 ? "s" : ""} left`}
+                          {mounted ? (days <= 0 ? "Overdue" : `${days} day${days !== 1 ? "s" : ""} left`) : ""}
                         </span>
                       )}
                       <span className="flex items-center gap-1.5">

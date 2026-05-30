@@ -4,6 +4,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { createNotifications } from "@/lib/notifications";
+import { z } from "zod";
+
+const AttendanceSubmitSchema = z.object({
+  classId: z.string(),
+  date: z.string().datetime(),
+  headCount: z.number().int().positive().optional(),
+  records: z.array(z.object({
+    studentId: z.string(),
+    status: z.enum(['PRESENT', 'ABSENT', 'LATE', 'BLOCKED']),
+  })).min(1).max(200),
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,11 +24,18 @@ export async function POST(req: NextRequest) {
     }
 
     const teacherId = session.user.id;
-    const { classId, date, records, headCount } = await req.json();
-
-    if (!classId || !date || !records || !Array.isArray(records)) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    const body = await req.json();
+    
+    const parsed = AttendanceSubmitSchema.safeParse({
+      ...body,
+      date: new Date(body.date).toISOString() // normalize date for zod validation
+    });
+    
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
     }
+
+    const { classId, date, records, headCount } = body;
 
     const teacherRecord = await prisma.teacher.findUnique({
       where: { userId: teacherId },
@@ -140,51 +158,48 @@ export async function POST(req: NextRequest) {
       attendanceMap.get(g.studentId)[g.status] = g._count;
     }
 
-    await Promise.all(allStudents.map(async (student) => {
-      // Calculate total classes held in memory
+    const updates = allStudents.flatMap(student => {
       const totalClassesHeld = classLogs.filter(log => log.date >= student.admissionDate).length;
-
       const studentStats = attendanceMap.get(student.id) || { PRESENT: 0, ABSENT: 0, LATE: 0, BLOCKED: 0 };
       const presentCount = studentStats.PRESENT;
       const lateCount = studentStats.LATE;
       
-      // Calculate missing absent
       const absentCount = totalClassesHeld - presentCount - lateCount;
       
-      // Calculate Percentage
       let attendancePercentage = totalClassesHeld > 0 
         ? ((presentCount + lateCount) / totalClassesHeld) * 100 
         : 100;
         
       attendancePercentage = Math.min(100, attendancePercentage);
 
-      // UPDATE student table
-      await prisma.student.update({
-        where: { id: student.id },
-        data: { attendancePercentage }
-      });
+      return [
+        prisma.student.update({
+          where: { id: student.id },
+          data: { attendancePercentage }
+        }),
+        prisma.attendanceSummary.upsert({
+          where: { studentId: student.id },
+          update: {
+            totalClasses: totalClassesHeld,
+            presentCount,
+            absentCount,
+            lateCount,
+            attendancePercentage,
+            lastUpdated: new Date()
+          },
+          create: {
+            studentId: student.id,
+            totalClasses: totalClassesHeld,
+            presentCount,
+            absentCount,
+            lateCount,
+            attendancePercentage,
+          }
+        })
+      ];
+    });
 
-      // UPDATE AttendanceSummary table
-      await prisma.attendanceSummary.upsert({
-        where: { studentId: student.id },
-        update: {
-          totalClasses: totalClassesHeld,
-          presentCount,
-          absentCount,
-          lateCount,
-          attendancePercentage,
-          lastUpdated: new Date()
-        },
-        create: {
-          studentId: student.id,
-          totalClasses: totalClassesHeld,
-          presentCount,
-          absentCount,
-          lateCount,
-          attendancePercentage,
-        }
-      });
-    }));
+    await prisma.$transaction(updates);
 
     // Notifications (Run outside transaction)
     const absentStudentIds = attendanceData.filter((r: any) => r.status === 'ABSENT').map((r: any) => r.studentId);

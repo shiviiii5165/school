@@ -81,6 +81,9 @@ model Student {
   payments          Payment[]
   installmentPlans  InstallmentPlan[]
   creditWallet      CreditWallet?
+
+  @@index([classId])
+  @@index([attendancePercentage])
 }
 
 model Parent {
@@ -146,6 +149,7 @@ model Attendance {
   @@unique([studentId, classId, date])
   @@index([classId, date])
   @@index([studentId, date])
+  @@index([studentId, status])
 }
 
 enum AttendanceStatus {
@@ -245,6 +249,9 @@ model FeeRecord {
   student            Student           @relation(fields: [studentId], references: [id])
   payments           Payment[]
   installmentPlans   InstallmentPlan[]
+
+  @@index([studentId, status])
+  @@index([dueDate, status])
 }
 
 model InstallmentPlan {
@@ -340,6 +347,10 @@ model DisciplineReport {
   resolvedAt      DateTime?
 
   createdAt   DateTime  @default(now())
+
+  @@index([status])
+  @@index([studentId])
+  @@index([reportedBy])
 }
 
 enum ActionType {
@@ -383,6 +394,7 @@ model Notification {
   createdAt DateTime         @default(now())
 
   @@index([userId, isRead])
+  @@index([userId, createdAt])
 }
 
 enum NotificationType {
@@ -522,6 +534,7 @@ model ExamResult {
 
   @@unique([slotId, studentId])
   @@index([examId, studentId])
+  @@index([slotId])
 }
 
 model ExamSummary {

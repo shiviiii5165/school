@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DataTable from "@/components/shared/DataTable";
 import { ShieldAlert, AlertTriangle, CheckCircle2, XCircle, Lock, Loader2, Ban, Unlock } from "lucide-react";
+import { formatDate, formatDateTime } from "@/lib/dateUtils";
 
 interface DisciplineReport {
   id: string;
@@ -145,7 +146,7 @@ export default function AdminDisciplinePage() {
     {
       header: "Date",
       accessorKey: "date",
-      cell: (item: any) => <span className="text-sm text-text-secondary">{new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+      cell: (item: any) => <span className="text-sm text-text-secondary" suppressHydrationWarning>{formatDateTime(item.date)}</span>
     },
     {
       header: "Status",
@@ -245,7 +246,7 @@ export default function AdminDisciplinePage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-display font-bold text-text-primary">Incident Review</h2>
-                  <p className="text-sm text-text-secondary">Reported on {new Date(selectedReport.date).toLocaleDateString('en-IN')}</p>
+                  <p className="text-sm text-text-secondary" suppressHydrationWarning>Reported on {formatDate(selectedReport.date)}</p>
                 </div>
               </div>
               <button onClick={() => { setSelectedReport(null); setDurationDays(1); }} className="p-2 hover:bg-background rounded-full transition-colors">
