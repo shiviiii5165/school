@@ -35,10 +35,6 @@ export default async function ParentDashboard() {
         isRead: false,
       }
     });
-          }
-        }
-      }
-    });
 
     if (!parentData) {
       return <div className="p-6">Parent profile not found.</div>;
