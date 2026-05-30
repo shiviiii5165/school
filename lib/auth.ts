@@ -53,8 +53,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             name: user.name,
             role: user.role,
           };
-        } catch (error) {
-          console.error("[Auth] Error during authorization:", error);
+        } catch (error: any) {
+          console.error("[Auth] CRITICAL Error during authorization:");
+          console.error(error);
+          
+          // Throw a specific error so it's not confused with invalid credentials
+          if (error.message && error.message.includes("Can't reach database server")) {
+            throw new Error("DATABASE_CONNECTION_ERROR");
+          }
+          
           return null;
         }
       }
