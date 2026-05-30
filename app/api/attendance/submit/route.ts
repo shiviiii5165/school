@@ -152,9 +152,11 @@ export async function POST(req: NextRequest) {
       const absentCount = totalClassesHeld - presentCount - lateCount;
       
       // Calculate Percentage
-      const attendancePercentage = totalClassesHeld > 0 
+      let attendancePercentage = totalClassesHeld > 0 
         ? ((presentCount + lateCount) / totalClassesHeld) * 100 
         : 100;
+        
+      attendancePercentage = Math.min(100, attendancePercentage);
 
       // UPDATE student table
       await prisma.student.update({
