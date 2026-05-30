@@ -10,7 +10,7 @@ type ChildData = {
   name: string;
   class: string;
   attendance: string;
-  lastScore: string;
+  lastScore: string | null;
   isSuspended?: boolean;
   suspendedUntil?: string | null;
   suspendedReason?: string | null;
@@ -86,7 +86,7 @@ export default function ParentDashboardClient({ childrenData, parentName, newNot
         />
         <MetricCard
           title="Last Exam Grade"
-          value={selectedChild.lastScore}
+          value={selectedChild.lastScore || "N/A"}
           icon={Award}
           iconColor="text-role-parent"
           iconBg="bg-role-parent/10"

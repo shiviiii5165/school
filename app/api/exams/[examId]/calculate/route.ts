@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
       return NextResponse.json({ error: "Exam not found" }, { status: 404 });
     }
 
-    const classIds = [...new Set(exam.slots.map(s => s.classId))];
+    const classIds = exam.slots.map(s => s.classId).filter((v, i, a) => a.indexOf(v) === i);
 
     const students = await prisma.student.findMany({
       where: { classId: { in: classIds } },

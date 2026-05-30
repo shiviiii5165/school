@@ -50,7 +50,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = CreateExamSchema.parse(await req.json());
+    const parsed = CreateExamSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
+    }
+    const body = parsed.data;
 
     const exam = await prisma.exam.create({
       data: {

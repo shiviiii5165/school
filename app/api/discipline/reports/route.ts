@@ -4,6 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+import { z } from "zod";
+
+const ReportSchema = z.object({
+  studentId: z.string().min(1),
+  category: z.enum(["ACADEMIC", "BEHAVIORAL", "ATTENDANCE", "OTHER"]),
+  description: z.string().min(5),
+});
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -11,11 +19,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized - Teacher only" }, { status: 401 });
     }
 
-    const { studentId, category, description } = await req.json();
-
-    if (!studentId || !category || !description) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const parsed = ReportSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
     }
+    const { studentId, category, description } = parsed.data;
 
     const teacher = await prisma.teacher.findUnique({
       where: { userId: session.user.id },

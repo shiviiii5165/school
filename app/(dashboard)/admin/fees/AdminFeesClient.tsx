@@ -196,11 +196,13 @@ export default function AdminFeesClient({ data, stats, defaulters }: AdminFeesCl
           </button>
         </div>
 
-        <DataTable
-          data={activeTab === 'ALL' ? data : defaulters}
-          columns={columns}
-          searchPlaceholder="Search by student, roll no, or fee type..."
-        />
+        <div className="overflow-x-auto w-full">
+          <DataTable
+            data={activeTab === 'ALL' ? data : defaulters}
+            columns={columns}
+            searchPlaceholder="Search by student, roll no, or fee type..."
+          />
+        </div>
       </div>
     </div>
   );

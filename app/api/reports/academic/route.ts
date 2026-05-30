@@ -11,60 +11,50 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const results = await prisma.result.findMany();
-    
-    // Fetch related students and classes manually because Result model lacks relations
-    const studentIds = Array.from(new Set(results.map(r => r.studentId)));
-    const students = await prisma.student.findMany({
-      where: { id: { in: studentIds } },
-      include: { user: true, class: true }
-    });
-    
-    const studentMap = students.reduce((acc, student) => {
-      acc[student.id] = student;
-      return acc;
-    }, {} as any);
-
-    const subjectAveragesMap: Record<string, { total: number, count: number }> = {};
-    const topPerformersMap: Record<string, { name: string, className: string, totalMarks: number, maxMarks: number }> = {};
-
-    results.forEach(res => {
-      // Subject averages
-      if (!subjectAveragesMap[res.subjectId]) {
-        subjectAveragesMap[res.subjectId] = { total: 0, count: 0 };
-      }
-      subjectAveragesMap[res.subjectId].total += (res.marks / res.maxMarks) * 100;
-      subjectAveragesMap[res.subjectId].count += 1;
-
-      // Top performers
-      const student = studentMap[res.studentId];
-      if (student) {
-        if (!topPerformersMap[res.studentId]) {
-          topPerformersMap[res.studentId] = { 
-            name: student.user.name, 
-            className: `${student.class.name} ${student.class.section}`,
-            totalMarks: 0,
-            maxMarks: 0
-          };
-        }
-        topPerformersMap[res.studentId].totalMarks += res.marks;
-        topPerformersMap[res.studentId].maxMarks += res.maxMarks;
-      }
+    // 1. Fetch Subject Averages via Prisma Aggregation
+    const subjectAverages = await prisma.result.groupBy({
+      by: ['subjectId'],
+      _avg: {
+        marks: true,
+      },
     });
 
-    const topPerformers = Object.values(topPerformersMap)
-      .map(p => ({
-        name: p.name,
-        className: p.className,
-        percentage: (p.totalMarks / p.maxMarks) * 100
-      }))
-      .sort((a, b) => b.percentage - a.percentage)
-      .slice(0, 10);
-
-    const subjectComparisonChart = Object.keys(subjectAveragesMap).map(subId => ({
-      name: `Subject ${subId.substring(0,4)}`, 
-      average: subjectAveragesMap[subId].total / subjectAveragesMap[subId].count
+    const subjectComparisonChart = subjectAverages.map(avg => ({
+      name: `Subject ${avg.subjectId.substring(0, 4)}`,
+      average: avg._avg.marks || 0,
     }));
+
+    // 2. Fetch Top Performers using aggregation to sum marks
+    const studentSums = await prisma.result.groupBy({
+      by: ['studentId'],
+      _sum: {
+        marks: true,
+        maxMarks: true,
+      },
+      orderBy: {
+        _sum: {
+          marks: 'desc',
+        },
+      },
+      take: 10,
+    });
+
+    const topStudentIds = studentSums.map(s => s.studentId);
+    const students = await prisma.student.findMany({
+      where: { id: { in: topStudentIds } },
+      include: { user: true, class: true },
+    });
+
+    const topPerformers = studentSums.map(s => {
+      const student = students.find(st => st.id === s.studentId);
+      const sumMarks = s._sum.marks || 0;
+      const sumMax = s._sum.maxMarks || 1;
+      return {
+        name: student?.user?.name || "Unknown",
+        className: student ? `${student.class.name} ${student.class.section}` : "Unknown",
+        percentage: (sumMarks / sumMax) * 100,
+      };
+    }).sort((a, b) => b.percentage - a.percentage);
 
     return NextResponse.json({
       topPerformers,

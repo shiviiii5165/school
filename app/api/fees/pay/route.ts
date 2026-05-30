@@ -4,6 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+import { z } from "zod";
+
+const PaymentSchema = z.object({
+  invoiceId: z.string().min(1),
+  amount: z.number().min(500, "Minimum payment amount is ₹500"),
+  paymentMode: z.enum(["CASH", "CARD", "UPI", "BANK_TRANSFER"]),
+  transactionId: z.string().optional(),
+});
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -11,16 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { invoiceId, amount, paymentMode, transactionId } = body;
-
-    if (!invoiceId || !amount || !paymentMode) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const parsed = PaymentSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
     }
-
-    if (amount < 500) {
-      return NextResponse.json({ error: "Minimum payment amount is ₹500" }, { status: 400 });
-    }
+    const { invoiceId, amount, paymentMode, transactionId } = parsed.data;
 
     // 1. Fetch Invoice
     const invoice = await prisma.feeRecord.findUnique({

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Award, ChevronRight, FileText, Trophy, GraduationCap, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { getGradeColor } from "@/lib/examUtils";
+import toast from "react-hot-toast";
 
 export default function ParentResultsPage() {
   const [children, setChildren] = useState<any[]>([]);

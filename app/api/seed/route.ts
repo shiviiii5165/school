@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    // Simple auth check via query param
-    const { searchParams } = new URL(req.url);
-    const secret = searchParams.get("secret");
-
-    if (secret !== process.env.CRON_SECRET && secret !== "seed-2024") {
+    const session = await auth();
+    if (!session || session.user?.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+import { z } from "zod";
+
+const InstallmentPlanSchema = z.object({
+  feeRecordId: z.string().min(1),
+  totalMonths: z.number().min(2, "Minimum 2 months required"),
+});
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -11,12 +18,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { feeRecordId, totalMonths } = body;
-
-    if (!feeRecordId || !totalMonths || totalMonths < 2) {
-      return NextResponse.json({ error: "Invalid installment plan details" }, { status: 400 });
+    const parsed = InstallmentPlanSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
     }
+    const { feeRecordId, totalMonths } = parsed.data;
 
     const feeRecord = await prisma.feeRecord.findUnique({
       where: { id: feeRecordId }

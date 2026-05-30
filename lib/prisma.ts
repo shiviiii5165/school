@@ -31,7 +31,7 @@ prisma.$use(async (params, next) => {
 });
 
 /**
- * Utility function to execute a database query with automatic retries for connection timeouts (like Neon cold starts).
+ * Utility function to execute a database query with automatic retries for connection timeouts (like Supabase cold starts).
  * Useful for critical API endpoints where the DB might be asleep.
  */
 export async function withDbRetry<T>(

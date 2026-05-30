@@ -232,7 +232,7 @@ export default function AdminDisciplinePage() {
 
       {/* Review Modal */}
       {selectedReport && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-6 backdrop-blur-sm">
           <div className="bg-surface rounded-2xl shadow-modal w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
             
             <div className={`p-6 border-b flex items-center justify-between ${
@@ -350,25 +350,25 @@ export default function AdminDisciplinePage() {
 
             {/* Footer Actions */}
             {selectedReport.status === "PENDING" && (
-              <div className="p-6 border-t border-border bg-background flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-6 border-t border-border bg-background flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                 <button
                   onClick={() => {
                     reviewMutation.mutate({ id: selectedReport.id, action: "DISMISSED", note: adminNote || "Dismissed by admin." });
                   }}
                   disabled={isProcessing}
-                  className="w-full sm:w-auto px-5 py-2.5 text-text-secondary font-medium hover:bg-border/50 rounded-lg transition-colors border border-border disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto px-5 py-3 text-text-secondary font-medium hover:bg-border/50 rounded-lg transition-colors border border-border disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {reviewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
                   Dismiss
                 </button>
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       if (!adminNote) return;
                       reviewMutation.mutate({ id: selectedReport.id, action: "RESOLVED_WARNING", note: adminNote });
                     }}
                     disabled={!adminNote || isProcessing}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-surface border border-border hover:bg-background text-text-primary px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-surface border border-border hover:bg-background text-text-primary px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
                   >
                     {reviewMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
                     Issue Warning
@@ -379,7 +379,7 @@ export default function AdminDisciplinePage() {
                       suspendMutation.mutate({ id: selectedReport.id, note: adminNote, durationDays });
                     }}
                     disabled={!adminNote || durationDays < 1 || isProcessing}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-status-danger hover:bg-status-danger/90 text-white px-6 py-2.5 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-status-danger hover:bg-status-danger/90 text-white px-6 py-3 rounded-lg font-medium transition-colors disabled:opacity-50 shadow-sm"
                   >
                     {suspendMutation.isPending ? (
                       <>

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
     }
 
     // Get all unique class IDs from slots
-    const classIds = [...new Set(exam.slots.map(s => s.classId))];
+    const classIds = exam.slots.map(s => s.classId).filter((v, i, a) => a.indexOf(v) === i);
 
     // Get system settings for detention threshold
     const settings = await prisma.systemSettings.findFirst();
@@ -41,13 +41,13 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
 
     const formatDate = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-    function getBlockReason(student: any): string | null {
+    const getBlockReason = (student: any): string | null => {
       if (student.isSuspended) return `Account suspended until ${formatDate(student.suspendedUntil || new Date())}`;
       if (!student.examEligible) return 'Detained due to low attendance';
       if (student.attendancePercentage < threshold)
         return `Attendance ${student.attendancePercentage.toFixed(1)}% below required ${threshold}%`;
       return null;
-    }
+    };
 
     // Generate HallTickets for each student
     const notifications: any[] = [];

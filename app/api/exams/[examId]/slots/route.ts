@@ -31,11 +31,14 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
       return NextResponse.json({ error: "Exam not found" }, { status: 404 });
     }
 
-    const body = SlotSchema.parse(await req.json());
+    const parsed = SlotSchema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid data", details: parsed.error.errors }, { status: 400 });
+    }
+    const body = parsed.data;
 
-    const created = [];
-    for (const slot of body.slots) {
-      const result = await prisma.examSlot.upsert({
+    const upserts = body.slots.map(slot => {
+      return prisma.examSlot.upsert({
         where: {
           examId_classId_subjectId: {
             examId: params.examId,
@@ -63,8 +66,9 @@ export async function POST(req: NextRequest, { params }: { params: { examId: str
           passMarks: slot.passMarks ?? exam.defaultPassPct,
         },
       });
-      created.push(result);
-    }
+    });
+
+    const created = await prisma.$transaction(upserts);
 
     return NextResponse.json({ slots: created }, { status: 201 });
   } catch (error: any) {

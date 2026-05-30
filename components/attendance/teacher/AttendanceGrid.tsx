@@ -10,6 +10,8 @@ interface Student {
   isSuspended?: boolean;
   suspensionReason?: string;
   suspendedUntil?: Date | null | string;
+  attendancePercentage?: number;
+  totalClassesHeld?: number;
 }
 
 export default function AttendanceGrid({ students }: { students: Student[] }) {

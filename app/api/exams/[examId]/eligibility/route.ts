@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { examId: stri
       return NextResponse.json({ error: "Exam not found" }, { status: 404 });
     }
 
-    const classIds = [...new Set(exam.slots.map(s => s.classId))];
+    const classIds = exam.slots.map(s => s.classId).filter((v, i, a) => a.indexOf(v) === i);
 
     const settings = await prisma.systemSettings.findFirst();
     const threshold = settings?.detentionThreshold ?? 75;
