@@ -97,7 +97,6 @@ export default function Sidebar({
               >
                 {isActive && (
                   <motion.div
-                    layoutId="activeNav"
                     className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r"
                   />
                 )}

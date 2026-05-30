@@ -150,7 +150,7 @@ export default function TeacherAssignmentsClient({ initialAssignments }: Teacher
                     </h3>
 
                     <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-text-secondary">
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1.5" suppressHydrationWarning>
                         <Calendar className="w-3.5 h-3.5 text-text-muted" />
                         Due: {new Date(assignment.dueDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </span>
