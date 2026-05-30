@@ -1,17 +1,10 @@
-import ParentDashboardClient from "./ParentDashboardClient";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-export default async function ParentDashboard() {
-  const session = await auth();
-  if (!session || !session.user?.id || session.user?.role !== "PARENT") {
-    redirect("/login");
-  }
-
+async function main() {
   try {
     const parentData = await prisma.parent.findUnique({
-      where: { userId: session.user.id },
+      where: { userId: 'cmppo38ai00hz10xqcvtblzi1' },
       include: {
         students: {
           include: {
@@ -29,20 +22,9 @@ export default async function ParentDashboard() {
       }
     });
 
-    const unreadNoticesCount = await prisma.notification.count({
-      where: {
-        userId: session.user.id,
-        isRead: false,
-      }
-    });
-
-    if (!parentData) {
-      return <div className="p-6">Parent profile not found.</div>;
-    }
-
     const childrenData = parentData.students.map((student) => {
         let pendingFees = 0;
-        const upcomingFees: any[] = [];
+        const upcomingFees = [];
         student.feeRecords?.forEach(record => {
           let lateFine = 0;
           const now = new Date();
@@ -76,10 +58,10 @@ export default async function ParentDashboard() {
 
       return {
         id: student.id,
-        name: student.user ? student.user.name : "Child",
+        name: student.user ? student.user.name : 'Child',
         class: `${student.class.name} - ${student.class.section}`,
-        attendance: student.attendanceSummary ? `${Math.round(student.attendanceSummary.attendancePercentage)}%` : "100%",
-        lastScore: student.examResults?.length > 0 ? student.examResults[0].grade : "N/A",
+        attendance: student.attendanceSummary ? `${Math.round(student.attendanceSummary.attendancePercentage)}%` : '100%',
+        lastScore: student.examResults?.length > 0 ? student.examResults[0].grade : 'N/A',
         recentGrades: student.examResults?.map(er => ({ subject: er.slot?.subject?.name || 'Unknown', grade: er.grade || 'N/A' })) || [],
         upcomingFees,
         isSuspended: student.isSuspended,
@@ -88,14 +70,9 @@ export default async function ParentDashboard() {
         pendingFees
       };
     });
-
-    return <ParentDashboardClient childrenData={childrenData} parentName={session.user.name || "Parent"} newNoticesCount={unreadNoticesCount} />;
-  } catch (error: any) {
-    console.error("Parent dashboard error:", error);
-    return (
-      <div className="p-8 text-center">
-        <p className="text-text-secondary">Unable to load parent dashboard. Please try again.</p>
-      </div>
-    );
+    console.log('Success!', childrenData.length);
+  } catch (error) {
+    console.error('Parent dashboard error:', error);
   }
 }
+main().catch(console.error).finally(() => prisma.$disconnect());
