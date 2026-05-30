@@ -14,9 +14,12 @@ type ChildData = {
   isSuspended?: boolean;
   suspendedUntil?: Date | null;
   suspendedReason?: string | null;
+  pendingFees?: number;
+  recentGrades?: { subject: string, grade: string }[];
+  upcomingFees?: { type: string, title: string, statusText: string, isOverdue: boolean }[];
 };
 
-export default function ParentDashboardClient({ childrenData, parentName }: { childrenData: ChildData[], parentName: string }) {
+export default function ParentDashboardClient({ childrenData, parentName, newNoticesCount }: { childrenData: ChildData[], parentName: string, newNoticesCount?: number }) {
   const [selectedChild, setSelectedChild] = useState(childrenData[0] || null);
 
   if (!selectedChild) {
@@ -90,14 +93,14 @@ export default function ParentDashboardClient({ childrenData, parentName }: { ch
         />
         <MetricCard
           title="Pending Fees"
-          value="₹4,500"
+          value={`₹${selectedChild.pendingFees?.toLocaleString() || 0}`}
           icon={IndianRupee}
           iconColor="text-status-danger-text"
           iconBg="bg-status-danger-bg"
         />
         <MetricCard
           title="New Notices"
-          value={2}
+          value={newNoticesCount || 0}
           icon={Bell}
           iconColor="text-primary"
           iconBg="bg-primary-light"
@@ -117,12 +120,14 @@ export default function ParentDashboardClient({ childrenData, parentName }: { ch
               <div className="border border-border rounded-xl p-4">
                 <p className="text-sm font-medium text-text-primary mb-3">Recent Grades</p>
                 <div className="space-y-3">
-                  {["Mathematics", "Science", "English"].map((sub, i) => (
+                  {selectedChild.recentGrades?.length ? selectedChild.recentGrades.map((rg, i) => (
                     <div key={i} className="flex items-center justify-between">
-                      <span className="text-sm text-text-secondary">{sub}</span>
-                      <span className="text-sm font-bold text-text-primary">A{i === 1 ? "" : "+"}</span>
+                      <span className="text-sm text-text-secondary">{rg.subject}</span>
+                      <span className="text-sm font-bold text-text-primary">{rg.grade}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-sm text-text-secondary">No recent grades available.</div>
+                  )}
                 </div>
                 <Link href="/parent/results" className="text-xs text-primary font-medium hover:underline mt-4 inline-block">View Full Report Card</Link>
               </div>
@@ -130,24 +135,19 @@ export default function ParentDashboardClient({ childrenData, parentName }: { ch
               <div className="border border-border rounded-xl p-4">
                 <p className="text-sm font-medium text-text-primary mb-3">Upcoming Due Dates</p>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-status-danger-bg flex items-center justify-center">
-                      <IndianRupee className="w-4 h-4 text-status-danger-text" />
+                  {selectedChild.upcomingFees?.length ? selectedChild.upcomingFees.map((fee, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg ${fee.isOverdue ? 'bg-status-danger-bg' : 'bg-status-warning-bg'} flex items-center justify-center`}>
+                        <IndianRupee className={`w-4 h-4 ${fee.isOverdue ? 'text-status-danger-text' : 'text-status-warning-text'}`} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-text-primary">{fee.title}</p>
+                        <p className={`text-xs font-medium ${fee.isOverdue ? 'text-status-danger-text' : 'text-text-muted'}`}>{fee.statusText}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">Tuition Fee</p>
-                      <p className="text-xs text-status-danger-text font-medium">Due in 2 days</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-status-warning-bg flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-status-warning-text" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-text-primary">Science Project</p>
-                      <p className="text-xs text-text-muted font-medium">Due next week</p>
-                    </div>
-                  </div>
+                  )) : (
+                    <div className="text-sm text-text-secondary">No upcoming dues.</div>
+                  )}
                 </div>
               </div>
             </div>
