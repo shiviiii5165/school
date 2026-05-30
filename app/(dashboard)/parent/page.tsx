@@ -83,7 +83,7 @@ export default async function ParentDashboard() {
         recentGrades: student.examResults?.map(er => ({ subject: er.subject.name, grade: er.grade })) || [],
         upcomingFees,
         isSuspended: student.isSuspended,
-        suspendedUntil: student.suspendedUntil,
+        suspendedUntil: student.suspendedUntil ? student.suspendedUntil.toISOString() : null,
         suspendedReason: student.suspendedReason,
         pendingFees
       };

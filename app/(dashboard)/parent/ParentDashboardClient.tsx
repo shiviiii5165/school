@@ -12,7 +12,7 @@ type ChildData = {
   attendance: string;
   lastScore: string;
   isSuspended?: boolean;
-  suspendedUntil?: Date | null;
+  suspendedUntil?: string | null;
   suspendedReason?: string | null;
   pendingFees?: number;
   recentGrades?: { subject: string, grade: string }[];
