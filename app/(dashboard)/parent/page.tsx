@@ -44,14 +44,16 @@ export default async function ParentDashboard() {
         let pendingFees = 0;
         const upcomingFees: any[] = [];
         student.feeRecords?.forEach(record => {
-          let lateFine = 0;
           const now = new Date();
           const dueDate = new Date(record.dueDate);
           
           if (record.status !== 'PAID') {
-            const daysToDue = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-            if (dueDate < now) {
-              const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+            const timeDiff = dueDate.getTime() - now.getTime();
+            const daysToDue = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            
+            let lateFine = 0;
+            if (daysToDue < 0) {
+              const daysOverdue = Math.abs(daysToDue);
               const monthsOverdue = Math.floor(daysOverdue / 30);
               if (monthsOverdue > 0) {
                 lateFine = record.amount * 0.02 * monthsOverdue;

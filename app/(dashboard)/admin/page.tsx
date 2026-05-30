@@ -8,7 +8,7 @@ export default async function AdminDashboard() {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const todayAttendance = await prisma.attendance.findMany({
+  const todayAttendanceCount = await prisma.attendance.count({
     where: {
       date: {
         gte: today,
@@ -17,9 +17,18 @@ export default async function AdminDashboard() {
     }
   });
 
-  const presentCount = todayAttendance.filter(a => a.status === 'PRESENT').length;
-  const attendancePercentage = todayAttendance.length > 0 
-    ? Math.round((presentCount / todayAttendance.length) * 100) 
+  const presentCount = await prisma.attendance.count({
+    where: {
+      date: {
+        gte: today,
+        lt: tomorrow,
+      },
+      status: 'PRESENT'
+    }
+  });
+
+  const attendancePercentage = todayAttendanceCount > 0 
+    ? Math.round((presentCount / todayAttendanceCount) * 100) 
     : 100;
 
   const totalClassesCount = await prisma.class.count();
