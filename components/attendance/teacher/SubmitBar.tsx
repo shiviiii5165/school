@@ -30,9 +30,9 @@ export default function SubmitBar({ classNameName, date, onSubmitClick, students
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-0 left-0 right-0 bg-surface border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-30 lg:left-[240px]"
+          className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-surface border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-30 lg:left-[240px] pb-[env(safe-area-inset-bottom)] md:pb-0"
         >
-          <div className="max-w-7xl mx-auto px-4 md:px-6 h-20 flex items-center justify-between gap-4">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between md:justify-between gap-4">
             {/* Left Section */}
             <div className="hidden md:flex flex-col min-w-[200px]">
               <span className="text-sm font-bold text-text-primary truncate">{classNameName}</span>
@@ -45,7 +45,7 @@ export default function SubmitBar({ classNameName, date, onSubmitClick, students
             </div>
 
             {/* Center Section: Absent Summary */}
-            <div className="flex-1 flex justify-center max-w-md">
+            <div className="hidden md:flex flex-1 justify-center max-w-md">
               <div className="flex items-center gap-3 bg-[#F8FAFC] border border-border rounded-xl px-4 py-2.5 w-full">
                 <span className="text-[11px] font-bold text-text-secondary uppercase whitespace-nowrap">Absent Roll Numbers (Auto)</span>
                 <div className="flex-1 flex flex-wrap gap-1.5 max-h-[44px] overflow-y-auto">
@@ -63,7 +63,7 @@ export default function SubmitBar({ classNameName, date, onSubmitClick, students
             {/* Right Section */}
             <button
               onClick={onSubmitClick}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1e3a8a] text-white px-6 md:px-8 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex-shrink-0 min-w-[180px]"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1e3a8a] text-white px-6 md:px-8 py-3 rounded-xl font-bold text-sm transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex-shrink-0 w-full md:w-auto md:min-w-[180px]"
             >
               Submit Attendance
               <FileCheck2 className="w-4 h-4 ml-1" />
