@@ -66,7 +66,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} font-sans`}>
+      <body className={`${inter.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable} font-sans min-h-[100dvh] bg-background text-text-primary antialiased`}>
         <QueryProvider>
           {children}
         </QueryProvider>

@@ -86,8 +86,8 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
         </div>
       </div>
 
-      <div className="flex items-center justify-center md:justify-start gap-4 md:gap-6">
-        <label className="flex items-center gap-2 cursor-pointer group/radio">
+      <div className="flex items-center justify-center md:justify-start gap-2 md:gap-6">
+        <label className="flex items-center gap-2 cursor-pointer group/radio p-1 sm:p-2 min-h-[44px] min-w-[44px]">
           <div className="relative flex items-center">
             <input 
               type="radio" 
@@ -96,7 +96,7 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
               onChange={() => setStatus(id, 'PRESENT')}
               className="peer sr-only"
             />
-            <div className={`w-4 h-4 rounded-full border border-border flex items-center justify-center transition-all ${isPresent ? 'border-[#16A34A]' : 'group-hover/radio:border-[#16A34A]'}`}>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isPresent ? 'border-[#16A34A]' : 'border-border group-hover/radio:border-[#16A34A]'}`}>
               {isPresent && <div className="w-2.5 h-2.5 rounded-full bg-[#16A34A]"></div>}
             </div>
           </div>
@@ -105,7 +105,7 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
           </span>
         </label>
 
-        <label className="flex items-center gap-2 cursor-pointer group/radio">
+        <label className="flex items-center gap-2 cursor-pointer group/radio p-1 sm:p-2 min-h-[44px] min-w-[44px]">
           <div className="relative flex items-center">
             <input 
               type="radio" 
@@ -114,7 +114,7 @@ const StudentCard = React.memo(({ id, name, rollNo, regId, avatar, isSuspended, 
               onChange={() => setStatus(id, 'ABSENT')}
               className="peer sr-only"
             />
-            <div className={`w-4 h-4 rounded-full border border-border flex items-center justify-center transition-all ${isAbsent ? 'border-[#DC2626]' : 'group-hover/radio:border-[#DC2626]'}`}>
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isAbsent ? 'border-[#DC2626]' : 'border-border group-hover/radio:border-[#DC2626]'}`}>
               {isAbsent && <div className="w-2.5 h-2.5 rounded-full bg-[#DC2626]"></div>}
             </div>
           </div>

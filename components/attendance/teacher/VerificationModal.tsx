@@ -47,9 +47,9 @@ export default function VerificationModal({ isOpen, onClose, onConfirm, classNam
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="bg-surface w-full max-w-lg rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] overflow-hidden"
+            className="bg-surface w-full max-w-lg rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col max-h-[90dvh]"
           >
-            <div className="flex items-center justify-between p-5 border-b border-border bg-background/50">
+            <div className="flex items-center justify-between p-5 border-b border-border bg-background/50 shrink-0">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-status-success-text" />
                 <h2 className="text-lg font-display font-bold text-text-primary">Attendance Summary</h2>
@@ -59,8 +59,8 @@ export default function VerificationModal({ isOpen, onClose, onConfirm, classNam
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="flex justify-between items-center text-sm font-medium text-text-secondary bg-background p-3 rounded-lg border border-border">
+            <div className="p-4 sm:p-6 space-y-6 overflow-y-auto flex-1">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm font-medium text-text-secondary bg-background p-3 rounded-lg border border-border">
                 <span>Class: <strong className="text-text-primary">{classNameName}</strong></span>
                 <span>Date: <strong className="text-text-primary">{new Date(date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong></span>
               </div>
@@ -126,18 +126,18 @@ export default function VerificationModal({ isOpen, onClose, onConfirm, classNam
               </AnimatePresence>
             </div>
 
-            <div className="p-5 border-t border-border bg-background/50 flex items-center justify-end gap-3">
+            <div className="p-4 sm:p-5 border-t border-border bg-background/50 flex flex-col-reverse sm:flex-row items-center justify-end gap-3 shrink-0 pb-[env(safe-area-inset-bottom,20px)]">
               <button
                 onClick={onClose}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 text-sm font-semibold text-text-secondary hover:bg-border rounded-lg transition-colors"
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-text-secondary hover:bg-border rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirm}
                 disabled={!isMatch || isSubmitting}
-                className="flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-primary rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "FINAL SUBMIT ✓"}
               </button>

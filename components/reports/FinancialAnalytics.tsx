@@ -93,20 +93,22 @@ export default function FinancialAnalytics({ data, isLoading }: FinancialAnalyti
         {/* Fee Collection Bar Chart */}
         <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-6 shadow-sm">
           <h3 className="font-display font-semibold text-text-primary mb-6">Fee Collection (Last 6 Months)</h3>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyRevenueChart} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} tickFormatter={(val) => `₹${val/1000}k`} />
-                <RechartsTooltip 
-                  cursor={{ fill: 'var(--color-background)' }}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Collection']}
-                />
-                <Bar dataKey="amount" fill="#16A34A" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="w-full overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="min-w-[600px] h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyRevenueChart} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} tickFormatter={(val) => `₹${val/1000}k`} />
+                  <RechartsTooltip 
+                    cursor={{ fill: 'var(--color-background)' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Collection']}
+                  />
+                  <Bar dataKey="amount" fill="#16A34A" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 

@@ -92,44 +92,48 @@ export default function AcademicAnalytics({ data, isLoading }: AcademicAnalytics
         {/* Subject Averages - Horizontal Bar Chart */}
         <div className="lg:col-span-1 bg-surface border border-border rounded-xl p-6 shadow-sm">
           <h3 className="font-display font-semibold text-text-primary mb-6">Subject Averages</h3>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={subjectAverages} margin={{ top: 5, right: 10, left: 10, bottom: 5 }} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--color-border)" />
-                <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} width={80} />
-                <RechartsTooltip 
-                  cursor={{ fill: 'var(--color-background)' }}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value.toFixed(1)}%`, 'Average Score']}
-                />
-                <Bar dataKey="average" fill="#3B82F6" radius={[0, 4, 4, 0]} maxBarSize={30} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="w-full overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="min-w-[400px] h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={subjectAverages} margin={{ top: 5, right: 10, left: 10, bottom: 5 }} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="var(--color-border)" />
+                  <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} width={80} />
+                  <RechartsTooltip 
+                    cursor={{ fill: 'var(--color-background)' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`${value.toFixed(1)}%`, 'Average Score']}
+                  />
+                  <Bar dataKey="average" fill="#3B82F6" radius={[0, 4, 4, 0]} maxBarSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
         {/* Subject-wise Performance Grouped Bar Chart */}
         <div className="lg:col-span-2 bg-surface border border-border rounded-xl p-6 shadow-sm">
           <h3 className="font-display font-semibold text-text-primary mb-6">Subject-wise Performance by Class</h3>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={groupedSubjectData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="subject" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <RechartsTooltip 
-                  cursor={{ fill: 'var(--color-background)' }}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value}%`, 'Score']}
-                />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                <Bar dataKey="10-A" fill={CLASS_COLORS[0]} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="10-B" fill={CLASS_COLORS[1]} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="9-A" fill={CLASS_COLORS[2]} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="9-B" fill={CLASS_COLORS[3]} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="w-full overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="min-w-[600px] h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={groupedSubjectData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="subject" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <RechartsTooltip 
+                    cursor={{ fill: 'var(--color-background)' }}
+                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`${value}%`, 'Score']}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  <Bar dataKey="10-A" fill={CLASS_COLORS[0]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="10-B" fill={CLASS_COLORS[1]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="9-A" fill={CLASS_COLORS[2]} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="9-B" fill={CLASS_COLORS[3]} radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -178,25 +182,27 @@ export default function AcademicAnalytics({ data, isLoading }: AcademicAnalytics
         {/* Exam-wise Result Trend */}
         <div className="lg:col-span-1 bg-surface border border-border rounded-xl p-6 shadow-sm">
           <h3 className="font-display font-semibold text-text-primary mb-6">Exam-wise Trend</h3>
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={examTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <defs>
-                  <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="exam" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <YAxis domain={[60, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
-                <RechartsTooltip 
-                  contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  formatter={(value: number) => [`${value}%`, 'Score']}
-                />
-                <Area type="monotone" dataKey="score" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorScore)" dot={{ fill: '#10B981', r: 4 }} activeDot={{ r: 6 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="w-full overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+            <div className="min-w-[400px] h-[280px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={examTrendData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                  <XAxis dataKey="exam" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <YAxis domain={[60, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--color-text-muted)' }} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '8px', border: '1px solid var(--color-border)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value: number) => [`${value}%`, 'Score']}
+                  />
+                  <Area type="monotone" dataKey="score" stroke="#10B981" strokeWidth={2} fillOpacity={1} fill="url(#colorScore)" dot={{ fill: '#10B981', r: 4 }} activeDot={{ r: 6 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>

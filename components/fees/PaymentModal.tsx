@@ -89,15 +89,15 @@ export default function PaymentModal({ invoice, wallets, onClose, onSuccess }: P
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90dvh]">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-slate-100 shrink-0">
           <h2 className="text-xl font-bold text-slate-800">Pay Fee</h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-5 overflow-y-auto flex-1">
           {/* Invoice Summary */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <h3 className="font-semibold text-slate-800">{invoice.feeType} Fee</h3>
@@ -167,13 +167,13 @@ export default function PaymentModal({ invoice, wallets, onClose, onSuccess }: P
                 onClick={() => setAmount(outstanding.toString())}
                 className="flex-1 py-2 text-xs font-semibold bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors"
               >
-                Full (₹{outstanding.toLocaleString()})
+                Full
               </button>
               <button 
                 onClick={() => setAmount((Math.round(outstanding / 2 / 10) * 10).toString())}
                 className="flex-1 py-2 text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
               >
-                Half (₹{(Math.round(outstanding / 2 / 10) * 10).toLocaleString()})
+                Half
               </button>
               <button 
                 onClick={() => setAmount('')}
@@ -187,24 +187,24 @@ export default function PaymentModal({ invoice, wallets, onClose, onSuccess }: P
           {/* Payment Method */}
           <div className="space-y-3">
             <label className="text-sm font-semibold text-slate-700">Payment Method</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {[
-                { id: 'UPI', icon: Smartphone, label: 'UPI / QR' },
+                { id: 'UPI', icon: Smartphone, label: 'UPI' },
                 { id: 'CARD', icon: CreditCard, label: 'Card' },
-                { id: 'NET_BANKING', icon: Building, label: 'Net Banking' },
+                { id: 'NET_BANKING', icon: Building, label: 'NetBank' },
                 { id: 'WALLET', icon: Wallet, label: 'Wallets' },
               ].map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setMode(m.id)}
-                  className={`flex items-center gap-2 p-3 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border transition-all ${
                     mode === m.id 
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700' 
                       : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                   }`}
                 >
-                  <m.icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{m.label}</span>
+                  <m.icon className="w-5 h-5" />
+                  <span className="text-[10px] font-bold uppercase">{m.label}</span>
                 </button>
               ))}
             </div>
@@ -214,30 +214,29 @@ export default function PaymentModal({ invoice, wallets, onClose, onSuccess }: P
           {parseFloat(amount) < outstanding && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
               <p className="text-xs text-amber-800 leading-relaxed">
-                <strong className="font-bold">⚠ Note:</strong> Paying a partial amount will mark this invoice as PARTIALLY PAID. The remaining ₹{(outstanding - parseFloat(amount || '0')).toLocaleString()} will still be due.
+                <strong className="font-bold">⚠ Note:</strong> Partial payment. Remaining ₹{(outstanding - parseFloat(amount || '0')).toLocaleString()} still due.
               </p>
             </div>
           )}
           {parseFloat(amount) > outstanding && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
               <p className="text-xs text-emerald-800 leading-relaxed">
-                <strong className="font-bold">✓ Note:</strong> The excess ₹{(parseFloat(amount || '0') - outstanding).toLocaleString()} will be automatically added to your Credit Wallet for future use.
+                <strong className="font-bold">✓ Note:</strong> Excess ₹{(parseFloat(amount || '0') - outstanding).toLocaleString()} added to Credit Wallet.
               </p>
             </div>
           )}
 
-          {/* Action */}
-          <div className="pt-2">
-            <button
-              onClick={handlePay}
-              disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
-            >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-              Pay ₹{parseFloat(amount || '0').toLocaleString()}
-            </button>
-          </div>
-
+        </div>
+        {/* Action */}
+        <div className="p-4 sm:p-6 border-t border-slate-100 shrink-0 bg-white pb-[env(safe-area-inset-bottom,20px)]">
+          <button
+            onClick={handlePay}
+            disabled={loading}
+            className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-indigo-500/30 transition-all disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            Pay ₹{parseFloat(amount || '0').toLocaleString()}
+          </button>
         </div>
       </div>
     </div>

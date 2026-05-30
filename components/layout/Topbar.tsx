@@ -13,17 +13,34 @@ const getPageTitle = (pathname: string) => {
   return lastPart.charAt(0).toUpperCase() + lastPart.slice(1);
 };
 
-export default function Topbar({ user }: { user: { name: string; role: string; avatar?: string } }) {
+export default function Topbar({ 
+  user, 
+  onOpenMobileDrawer 
+}: { 
+  user: { name: string; role: string; avatar?: string };
+  onOpenMobileDrawer?: () => void;
+}) {
   const pathname = usePathname();
   const title = getPageTitle(pathname);
 
   return (
-    <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
-      <h1 className="text-xl font-display font-bold text-text-primary">
-        {title}
-      </h1>
+    <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-4 sm:px-6 sticky top-0 z-30 pt-[env(safe-area-inset-top)]">
+      <div className="flex items-center gap-3">
+        {onOpenMobileDrawer && (
+          <button 
+            onClick={onOpenMobileDrawer}
+            className="md:hidden p-2 -ml-2 text-text-muted hover:text-text-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 focus:ring-offset-surface"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        )}
+        <h1 className="text-xl font-display font-bold text-text-primary truncate max-w-[150px] sm:max-w-xs">
+          {title}
+        </h1>
+      </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4 sm:gap-6">
         <div className="relative hidden md:block w-64">
           <Search className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -33,13 +50,13 @@ export default function Topbar({ user }: { user: { name: string; role: string; a
           />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <NotificationBell role={user.role} />
 
-          <div className="h-8 w-px bg-border"></div>
+          <div className="h-8 w-px bg-border hidden sm:block"></div>
 
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end hidden sm:flex">
+            <div className="flex-col items-end hidden sm:flex">
               <span className="text-sm font-semibold text-text-primary leading-tight">{user.name}</span>
               <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm mt-0.5 ${
                 user.role === 'ADMIN' ? 'bg-role-admin text-white' :
@@ -50,11 +67,11 @@ export default function Topbar({ user }: { user: { name: string; role: string; a
                 {user.role}
               </span>
             </div>
-            <div className="w-9 h-9 rounded-full bg-border flex items-center justify-center overflow-hidden border-2 border-surface shadow-sm relative">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-border flex items-center justify-center overflow-hidden border-2 border-surface shadow-sm relative shrink-0">
               {user.avatar ? (
                 <Image src={user.avatar} alt="Avatar" fill sizes="36px" className="object-cover" />
               ) : (
-                <span className="font-bold text-text-secondary">{user.name.charAt(0)}</span>
+                <span className="font-bold text-text-secondary text-sm sm:text-base">{user.name.charAt(0)}</span>
               )}
             </div>
           </div>

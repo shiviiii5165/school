@@ -76,7 +76,7 @@ export default function MetricCard({
       animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
       transition={{ duration: 0.4 }}
       onClick={onClick}
-      className={`bg-surface p-5 rounded-lg shadow-card border border-border flex flex-col gap-4 ${
+      className={`bg-surface p-4 sm:p-5 rounded-lg shadow-card border border-border flex flex-col justify-between h-full gap-4 ${
         onClick ? "cursor-pointer hover:shadow-dropdown transition-shadow" : ""
       }`}
     >

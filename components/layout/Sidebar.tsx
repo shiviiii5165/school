@@ -1,67 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
-import { 
-  LayoutDashboard, Users, UserCog, GraduationCap, 
-  CreditCard, ShieldAlert, FileText, ClipboardList,
-  Settings, LogOut, ChevronLeft, ChevronRight, BookOpen,
-  CalendarDays, Mail, FileCheck2, ShieldCheck, HelpCircle,
-  Trophy
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GraduationCap, LogOut, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { getNavItems } from "@/lib/navItems";
 
-const getNavItems = (role: string) => {
-  switch (role) {
-    case "ADMIN":
-      return [
-        { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-        { label: "Attendance", href: "/admin/attendance", icon: FileCheck2 },
-        { label: "Students", href: "/admin/students", icon: Users },
-        { label: "Teachers", href: "/admin/teachers", icon: UserCog },
-        { label: "Fees", href: "/admin/fees", icon: CreditCard },
-        { label: "Exams", href: "/admin/exams", icon: Trophy },
-        { label: "Discipline Center", href: "/admin/discipline", icon: ShieldAlert, alert: true },
-        { label: "Reports", href: "/admin/reports", icon: FileText },
-        { label: "Settings", href: "/admin/settings", icon: Settings },
-      ];
-    case "TEACHER":
-      return [
-        { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
-        { label: "Attendance", href: "/teacher/attendance", icon: FileCheck2 },
-        { label: "Assignments", href: "/teacher/assignments", icon: BookOpen },
-        { label: "Exams", href: "/teacher/exams", icon: Trophy },
-        { label: "Discipline", href: "/teacher/discipline", icon: ShieldAlert },
-        { label: "Timetable", href: "/teacher/timetable", icon: CalendarDays },
-      ];
-    case "STUDENT":
-      return [
-        { label: "Dashboard", href: "/student", icon: LayoutDashboard },
-        { label: "Attendance", href: "/student/attendance", icon: FileCheck2 },
-        { label: "Assignments", href: "/student/assignments", icon: BookOpen },
-        { label: "Exams", href: "/student/exams", icon: Trophy },
-        { label: "Results", href: "/student/results", icon: FileText },
-        { label: "Notices", href: "/student/notices", icon: ClipboardList },
-        { label: "Fees", href: "/student/fees", icon: CreditCard },
-      ];
-    case "PARENT":
-      return [
-        { label: "Dashboard", href: "/parent", icon: LayoutDashboard },
-        { label: "Child Attendance", href: "/parent/attendance", icon: FileCheck2 },
-        { label: "Child Exams", href: "/parent/exams", icon: Trophy },
-        { label: "Child Results", href: "/parent/results", icon: FileText },
-        { label: "Fees", href: "/parent/fees", icon: CreditCard },
-        { label: "Messages", href: "/parent/messages", icon: Mail },
-      ];
-    default:
-      return [];
-  }
-};
-
-export default function Sidebar({ user }: { user: { name: string; role: string; avatar?: string } }) {
+export default function Sidebar({ 
+  user, 
+  isOpenMobile, 
+  onCloseMobile 
+}: { 
+  user: { name: string; role: string; avatar?: string };
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const navItems = getNavItems(user.role);
@@ -73,24 +29,38 @@ export default function Sidebar({ user }: { user: { name: string; role: string; 
     PARENT: "bg-role-parent",
   };
 
-  return (
-    <motion.aside
-      initial={{ width: 240 }}
-      animate={{ width: collapsed ? 72 : 240 }}
-      className="h-screen bg-surface border-r border-border flex flex-col fixed left-0 top-0 z-40"
-    >
+  // Close mobile drawer on route change
+  useEffect(() => {
+    if (isOpenMobile && onCloseMobile) {
+      onCloseMobile();
+    }
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // For non-admins, the sidebar is only used as a "More" drawer on mobile, 
+  // or normally on desktop. Actually, let's keep desktop behavior 100% same.
+  const hasBottomNav = user.role !== "ADMIN";
+  const desktopClasses = hasBottomNav ? "hidden md:flex" : "hidden md:flex";
+
+  const sidebarContent = (
+    <>
       {/* Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
           <div className="bg-primary p-2 rounded-lg flex-shrink-0">
             <GraduationCap className="w-5 h-5 text-white" />
           </div>
           {!collapsed && <span className="font-display font-bold text-lg text-text-primary">EduCore</span>}
         </div>
+        {/* Mobile Close Button */}
+        {isOpenMobile && (
+          <button onClick={onCloseMobile} className="md:hidden p-2 text-text-muted hover:text-text-primary">
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* User Profile */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border shrink-0">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
           <div className="w-10 h-10 rounded-full bg-border flex items-center justify-center flex-shrink-0 overflow-hidden relative">
             {user.avatar ? (
@@ -145,7 +115,7 @@ export default function Sidebar({ user }: { user: { name: string; role: string; 
       </div>
 
       {/* Footer / Toggle */}
-      <div className="p-4 border-t border-border flex flex-col gap-2">
+      <div className="p-4 border-t border-border flex flex-col gap-2 shrink-0 pb-[env(safe-area-inset-bottom,16px)]">
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-status-danger hover:bg-status-danger-bg transition-all whitespace-nowrap overflow-hidden`}
@@ -158,11 +128,48 @@ export default function Sidebar({ user }: { user: { name: string; role: string; 
         <button
           onClick={() => setCollapsed(!collapsed)}
           aria-label="Toggle Sidebar"
-          className="flex items-center justify-center h-10 w-full rounded-lg hover:bg-background text-text-muted transition-colors"
+          className="items-center justify-center h-10 w-full rounded-lg hover:bg-background text-text-muted transition-colors hidden md:flex"
         >
           {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
         </button>
       </div>
-    </motion.aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <motion.aside
+        initial={{ width: 240 }}
+        animate={{ width: collapsed ? 72 : 240 }}
+        className={`h-[100dvh] bg-surface border-r border-border flex-col fixed left-0 top-0 z-40 hidden md:flex`}
+      >
+        {sidebarContent}
+      </motion.aside>
+
+      {/* Mobile Drawer */}
+      <AnimatePresence>
+        {isOpenMobile && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onCloseMobile}
+              className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className="h-[100dvh] w-64 bg-surface border-r border-border flex flex-col fixed left-0 top-0 z-50 md:hidden overflow-hidden"
+            >
+              {sidebarContent}
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
